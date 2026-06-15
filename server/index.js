@@ -8,18 +8,13 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Fitcore server is running!' });
 });
 
-// Placeholder for Claude API integration
 app.post('/api/ai/coach', async (req, res) => {
   try {
     const { prompt } = req.body;
-    // Here you will integrate with Anthropic API
-    // const response = await anthropic.messages.create({...})
-    
     res.json({ 
       success: true, 
       message: "This is a mock response from the AI coach.",
