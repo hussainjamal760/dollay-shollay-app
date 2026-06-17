@@ -1,8 +1,14 @@
 const mongoose = require('mongoose');
 
+const planSetSchema = new mongoose.Schema({
+  weightLifted: { type: Number, default: 0 },
+  reps: { type: Number, default: 0 }
+});
+
 const exerciseSchema = new mongoose.Schema({
   muscle: { type: String, required: true },
   name: { type: String, required: true },
+  setsData: [planSetSchema],
   weightLifted: { type: Number },
   sets: { type: Number },
   reps: { type: Number }

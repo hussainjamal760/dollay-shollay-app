@@ -38,11 +38,48 @@ export default function CreateWorkoutScreen({ navigation }: any) {
   };
 
   const addExercise = (day: string, muscle: string) => {
-    setExercises([...exercises, { id: Date.now().toString(), dayOfWeek: day, muscle, name: '', weightLifted: '', sets: '', reps: '' }]);
+    setExercises([...exercises, { 
+      id: Date.now().toString(), 
+      dayOfWeek: day, 
+      muscle, 
+      name: '', 
+      numSets: '1', 
+      setsData: [{ weightLifted: '', reps: '' }] 
+    }]);
   };
 
   const updateExercise = (id: string, field: string, value: string) => {
     setExercises(exercises.map(ex => ex.id === id ? { ...ex, [field]: value } : ex));
+  };
+
+  const updateSetCount = (id: string, countStr: string) => {
+    const count = parseInt(countStr) || 0;
+    setExercises(exercises.map(ex => {
+      if (ex.id === id) {
+        let newSetsData = [...ex.setsData];
+        if (count > newSetsData.length) {
+          const lastSet = newSetsData[newSetsData.length - 1] || { weightLifted: '', reps: '' };
+          for (let i = newSetsData.length; i < count; i++) {
+            newSetsData.push({ ...lastSet });
+          }
+        } else if (count < newSetsData.length) {
+          newSetsData = newSetsData.slice(0, count);
+        }
+        return { ...ex, numSets: countStr, setsData: newSetsData };
+      }
+      return ex;
+    }));
+  };
+
+  const updateSetData = (id: string, setIndex: number, field: string, value: string) => {
+    setExercises(exercises.map(ex => {
+      if (ex.id === id) {
+        const newSetsData = [...ex.setsData];
+        newSetsData[setIndex] = { ...newSetsData[setIndex], [field]: value };
+        return { ...ex, setsData: newSetsData };
+      }
+      return ex;
+    }));
   };
 
   const removeExercise = (id: string) => {
@@ -66,13 +103,21 @@ export default function CreateWorkoutScreen({ navigation }: any) {
       muscles: dayMuscles[day] || [],
       exercises: exercises
         .filter(ex => ex.dayOfWeek === day)
-        .map(ex => ({
-          muscle: ex.muscle,
-          name: ex.name,
-          weightLifted: ex.weightLifted ? parseFloat(ex.weightLifted) : 0,
-          sets: ex.sets ? parseInt(ex.sets, 10) : 0,
-          reps: ex.reps ? parseInt(ex.reps, 10) : 0
-        }))
+        .map(ex => {
+          const parsedSetsData = ex.setsData.map((s: any) => ({
+            weightLifted: parseFloat(s.weightLifted) || 0,
+            reps: parseInt(s.reps, 10) || 0
+          }));
+
+          return {
+            muscle: ex.muscle,
+            name: ex.name,
+            setsData: parsedSetsData,
+            weightLifted: parsedSetsData.length > 0 ? parsedSetsData[0].weightLifted : 0,
+            sets: parsedSetsData.length,
+            reps: parsedSetsData.length > 0 ? parsedSetsData[0].reps : 0
+          };
+        })
     }));
 
     const workout = {
@@ -229,32 +274,46 @@ export default function CreateWorkoutScreen({ navigation }: any) {
                       value={ex.name}
                       onChangeText={(val) => updateExercise(ex.id, 'name', val)}
                     />
-                    <View style={styles.exRow}>
+                    
+                    {/* Per-Set Tracking UI */}
+                    <View style={styles.numSetsRow}>
+                      <Text style={styles.numSetsLabel}>Number of Sets:</Text>
                       <TextInput
-                        style={[styles.exInput, { flex: 1, marginRight: 5 }]}
-                        placeholder="Weight (kg/lbs)"
-                        placeholderTextColor="#999"
+                        style={styles.numSetsInput}
                         keyboardType="numeric"
-                        value={ex.weightLifted}
-                        onChangeText={(val) => updateExercise(ex.id, 'weightLifted', val)}
-                      />
-                      <TextInput
-                        style={[styles.exInput, { flex: 1, marginRight: 5 }]}
-                        placeholder="Sets"
-                        placeholderTextColor="#999"
-                        keyboardType="numeric"
-                        value={ex.sets}
-                        onChangeText={(val) => updateExercise(ex.id, 'sets', val)}
-                      />
-                      <TextInput
-                        style={[styles.exInput, { flex: 1 }]}
-                        placeholder="Reps"
-                        placeholderTextColor="#999"
-                        keyboardType="numeric"
-                        value={ex.reps}
-                        onChangeText={(val) => updateExercise(ex.id, 'reps', val)}
+                        value={ex.numSets}
+                        onChangeText={(val) => updateSetCount(ex.id, val)}
                       />
                     </View>
+
+                    {ex.setsData.map((setObj: any, sIdx: number) => (
+                      <View key={sIdx} style={styles.setRow}>
+                        <Text style={styles.setLabel}>Set {sIdx + 1}</Text>
+                        <View style={styles.setInputGroup}>
+                          <Text style={styles.setInputLabel}>kg</Text>
+                          <TextInput
+                            style={styles.setInput}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor="#666"
+                            value={setObj.weightLifted}
+                            onChangeText={(val) => updateSetData(ex.id, sIdx, 'weightLifted', val)}
+                          />
+                        </View>
+                        <View style={styles.setInputGroup}>
+                          <Text style={styles.setInputLabel}>reps</Text>
+                          <TextInput
+                            style={styles.setInput}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor="#666"
+                            value={setObj.reps}
+                            onChangeText={(val) => updateSetData(ex.id, sIdx, 'reps', val)}
+                          />
+                        </View>
+                      </View>
+                    ))}
+
                   </View>
                 ))}
               </View>
@@ -529,7 +588,64 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
   },
-  exRow: {
+  numSetsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    marginTop: 5,
+  },
+  numSetsLabel: {
+    color: '#bbb',
+    fontSize: 14,
+    marginRight: 10,
+  },
+  numSetsInput: {
+    backgroundColor: '#111',
+    color: '#fff',
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 6,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    backgroundColor: '#222',
+    padding: 8,
+    borderRadius: 8,
+  },
+  setLabel: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    width: 45,
+  },
+  setInputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  setInputLabel: {
+    color: '#999',
+    fontSize: 11,
+    marginRight: 5,
+  },
+  setInput: {
+    backgroundColor: '#111',
+    color: '#fff',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: '#444',
+    minWidth: 55,
   },
 });

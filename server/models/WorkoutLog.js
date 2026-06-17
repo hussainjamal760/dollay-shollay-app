@@ -1,8 +1,14 @@
 const mongoose = require('mongoose');
 
+const logSetSchema = new mongoose.Schema({
+  weightLifted: { type: Number, default: 0 },
+  reps: { type: Number, default: 0 }
+});
+
 const logExerciseSchema = new mongoose.Schema({
   muscle: { type: String, required: true },
   name: { type: String, required: true },
+  setsData: [logSetSchema],
   weightLifted: { type: Number },
   sets: { type: Number },
   reps: { type: Number }

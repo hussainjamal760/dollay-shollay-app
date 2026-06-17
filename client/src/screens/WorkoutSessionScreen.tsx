@@ -4,6 +4,11 @@ import { LineChart } from 'react-native-chart-kit';
 import { getWorkoutLogsForPlan, saveWorkoutLogLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
 
+const getTodayDayOfWeek = () => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[new Date().getDay()];
+};
+
 export default function WorkoutSessionScreen({ route, navigation }: any) {
   const { plan } = route.params;
   const [loadingEx, setLoadingEx] = useState<{ [key: string]: boolean }>({});
@@ -14,6 +19,8 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
   const [historyMap, setHistoryMap] = useState<{ [exKey: string]: any[] }>({});
   const [newLoads, setNewLoads] = useState<{ [exKey: string]: any }>({});
 
+  const todayLabel = getTodayDayOfWeek();
+
   useEffect(() => {
     let parsedDays = [];
     try {
@@ -21,26 +28,11 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
     } catch (e) {
       parsedDays = [];
     }
-
     setAllDays(parsedDays);
-
-    const initNewLoads: any = {};
-    parsedDays.forEach((d: any) => {
-      d.exercises.forEach((ex: any) => {
-        const key = `${d.dayOfWeek}_${ex.name}`;
-        initNewLoads[key] = {
-          weightLifted: ex.weightLifted ? ex.weightLifted.toString() : '0',
-          sets: ex.sets ? ex.sets.toString() : '0',
-          reps: ex.reps ? ex.reps.toString() : '0'
-        };
-      });
-    });
-    setNewLoads(initNewLoads);
-
-    loadHistory();
+    loadHistory(parsedDays);
   }, [plan]);
 
-  const loadHistory = async () => {
+  const loadHistory = async (parsedDays: any[]) => {
     const planIdStr = plan.server_id || plan.id.toString();
     const logs = await getWorkoutLogsForPlan(planIdStr);
     
@@ -53,25 +45,67 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
       } catch (e) {}
 
       exList.forEach((ex: any) => {
-        // Since old logs might not have dayOfWeek saved natively in the exercise object,
-        // we'll try to map it by name. If they did the same exercise on 2 days, they share history.
-        // But let's build keys dynamically. If we don't have dayOfWeek in the log, we fallback to just name.
-        const keyMatch = ex.dayOfWeek ? `${ex.dayOfWeek}_${ex.name}` : ex.name;
-        
-        // We'll populate history map based on just exercise name to be safe across days,
-        // or specifically by day if tracked. Let's just use the exact name for history.
         const histKey = ex.name;
         if (!hMap[histKey]) hMap[histKey] = [];
+        
+        // Ensure setsData exists
+        let setsData = ex.setsData;
+        if (!setsData || setsData.length === 0) {
+          // Backward compatibility for old logs
+          setsData = [];
+          const numSets = parseInt(ex.sets) || 1;
+          for(let i=0; i<numSets; i++) {
+            setsData.push({ weightLifted: parseFloat(ex.weightLifted) || 0, reps: parseInt(ex.reps) || 0 });
+          }
+        }
+
         hMap[histKey].push({
           date: new Date(logRow.date).toLocaleDateString(),
-          weightLifted: ex.weightLifted,
-          sets: ex.sets,
-          reps: ex.reps
+          dateObj: new Date(logRow.date),
+          setsData: setsData
         });
       });
     });
 
     setHistoryMap(hMap);
+
+    // Initialize newLoads based on history or plan defaults
+    const initNewLoads: any = {};
+    parsedDays.forEach((d: any) => {
+      d.exercises.forEach((ex: any) => {
+        const key = `${d.dayOfWeek}_${ex.name}`;
+        const histKey = ex.name;
+        
+        let initialSetsData = [];
+        let numSets = 0;
+
+        if (hMap[histKey] && hMap[histKey].length > 0) {
+          // Use last saved load
+          const lastLoad = hMap[histKey][0];
+          initialSetsData = JSON.parse(JSON.stringify(lastLoad.setsData));
+          numSets = initialSetsData.length;
+        } else if (ex.setsData && ex.setsData.length > 0) {
+          // Use detailed plan defaults
+          initialSetsData = JSON.parse(JSON.stringify(ex.setsData));
+          numSets = initialSetsData.length;
+        } else {
+          // Use old simple plan defaults
+          numSets = parseInt(ex.sets) || 1;
+          for(let i=0; i<numSets; i++) {
+            initialSetsData.push({ weightLifted: ex.weightLifted?.toString() || '0', reps: ex.reps?.toString() || '0' });
+          }
+        }
+
+        initNewLoads[key] = {
+          numSets: numSets.toString(),
+          setsData: initialSetsData.map((s: any) => ({
+            weightLifted: s.weightLifted.toString(),
+            reps: s.reps.toString()
+          }))
+        };
+      });
+    });
+    setNewLoads(initNewLoads);
   };
 
   const toggleDay = (day: string) => {
@@ -82,23 +116,58 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
     setExpandedHistory(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const updateNewLoad = (key: string, field: string, value: string) => {
-    setNewLoads(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: value
+  const updateSetCount = (key: string, countStr: string) => {
+    const count = parseInt(countStr) || 0;
+    setNewLoads(prev => {
+      const current = prev[key];
+      let newSetsData = [...current.setsData];
+      
+      if (count > newSetsData.length) {
+        // Add sets, duplicating the last set's weight/reps if available
+        const lastSet = newSetsData[newSetsData.length - 1] || { weightLifted: '0', reps: '0' };
+        for (let i = newSetsData.length; i < count; i++) {
+          newSetsData.push({ ...lastSet });
+        }
+      } else if (count < newSetsData.length) {
+        // Remove sets
+        newSetsData = newSetsData.slice(0, count);
       }
-    }));
+
+      return {
+        ...prev,
+        [key]: { ...current, numSets: countStr, setsData: newSetsData }
+      };
+    });
+  };
+
+  const updateSetData = (key: string, setIndex: number, field: string, value: string) => {
+    setNewLoads(prev => {
+      const current = prev[key];
+      const newSetsData = [...current.setsData];
+      newSetsData[setIndex] = { ...newSetsData[setIndex], [field]: value };
+      
+      return {
+        ...prev,
+        [key]: { ...current, setsData: newSetsData }
+      };
+    });
   };
 
   const handleSaveExercise = async (dayObj: any, ex: any) => {
     const key = `${dayObj.dayOfWeek}_${ex.name}`;
     const load = newLoads[key];
 
-    if (!load) return;
+    if (!load || load.setsData.length === 0) {
+      Alert.alert('Error', 'Please enter at least 1 set.');
+      return;
+    }
 
     setLoadingEx(prev => ({ ...prev, [key]: true }));
+
+    const parsedSetsData = load.setsData.map((s: any) => ({
+      weightLifted: parseFloat(s.weightLifted) || 0,
+      reps: parseInt(s.reps, 10) || 0
+    }));
 
     const workoutLog = {
       planId: plan.server_id || plan.id.toString(),
@@ -109,18 +178,19 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
           dayOfWeek: dayObj.dayOfWeek,
           muscle: ex.muscle,
           name: ex.name,
-          weightLifted: parseFloat(load.weightLifted) || 0,
-          sets: parseInt(load.sets, 10) || 0,
-          reps: parseInt(load.reps, 10) || 0
+          setsData: parsedSetsData,
+          // For backward compat on server if needed
+          weightLifted: parsedSetsData.length > 0 ? parsedSetsData[0].weightLifted : 0,
+          sets: parsedSetsData.length,
+          reps: parsedSetsData.length > 0 ? parsedSetsData[0].reps : 0,
         }
       ]
     };
 
     try {
       await saveWorkoutLogLocally(workoutLog, false);
-      syncDataWithServer(); // Fire and forget sync
+      syncDataWithServer(); 
       
-      // Update history map locally instantly
       const histKey = ex.name;
       setHistoryMap(prev => {
         const curHist = prev[histKey] || [];
@@ -129,9 +199,8 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
           [histKey]: [
             {
               date: new Date().toLocaleDateString(),
-              weightLifted: workoutLog.exercises[0].weightLifted,
-              sets: workoutLog.exercises[0].sets,
-              reps: workoutLog.exercises[0].reps
+              dateObj: new Date(),
+              setsData: parsedSetsData
             },
             ...curHist
           ]
@@ -148,23 +217,25 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.planName}>{plan.name}</Text>
-      <Text style={styles.instructions}>Click a day to view exercises and log your progress.</Text>
+      <Text style={styles.planName}>{plan.name} - Full Routine</Text>
+      <Text style={styles.instructions}>Review your routine. Log any day's workout by editing your numbers and clicking "Save".</Text>
 
       {allDays.map(dayObj => {
         const isExpanded = expandedDays[dayObj.dayOfWeek];
-        // Unique muscles for the day summary
+        const isToday = dayObj.dayOfWeek === todayLabel;
         const muscles = Array.from(new Set(dayObj.exercises.map((e:any) => e.muscle))).join(', ');
         
         return (
-          <View key={dayObj.dayOfWeek} style={styles.dayCard}>
+          <View key={dayObj.dayOfWeek} style={[styles.dayCard, isToday && styles.highlightedDay]}>
             <TouchableOpacity 
               style={styles.dayHeader} 
               onPress={() => toggleDay(dayObj.dayOfWeek)}
               activeOpacity={0.7}
             >
               <View>
-                <Text style={styles.dayTitle}>{dayObj.dayOfWeek}</Text>
+                <Text style={[styles.dayTitle, isToday && styles.highlightedText]}>
+                  {dayObj.dayOfWeek} {isToday && '(Today)'}
+                </Text>
                 <Text style={styles.muscleSummary}>{muscles || 'Rest Day'}</Text>
               </View>
               <Text style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</Text>
@@ -179,10 +250,12 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                     const key = `${dayObj.dayOfWeek}_${ex.name}`;
                     const histKey = ex.name;
                     const history = historyMap[histKey] || [];
-                    const lastLoad = history.length > 0 ? history[0] : ex;
-                    const loadState = newLoads[key] || {};
+                    const lastLoad = history.length > 0 ? history[0] : null;
+                    const loadState = newLoads[key];
                     const histExpanded = expandedHistory[key];
                     const isSaving = loadingEx[key];
+
+                    if (!loadState) return null; // Still loading
 
                     return (
                       <View key={key} style={styles.exerciseCard}>
@@ -192,14 +265,18 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                         </View>
                         
                         {/* Current/Last Saved Load */}
-                        <View style={styles.lastLoadContainer}>
-                          <Text style={styles.lastLoadTitle}>Last Saved Load</Text>
-                          <Text style={styles.lastLoadText}>
-                            {lastLoad.weightLifted} kg  ×  {lastLoad.sets} sets  ×  {lastLoad.reps} reps
-                          </Text>
-                        </View>
+                        {lastLoad && (
+                          <View style={styles.lastLoadContainer}>
+                            <Text style={styles.lastLoadTitle}>Last Saved Load</Text>
+                            {lastLoad.setsData.map((s: any, idx: number) => (
+                              <Text key={idx} style={styles.lastLoadText}>
+                                Set {idx + 1}: {s.weightLifted} kg  ×  {s.reps} reps
+                              </Text>
+                            ))}
+                          </View>
+                        )}
 
-                        {/* History Dropdown */}
+                        {/* History Dropdown & Charts */}
                         {history.length > 1 && (
                           <View style={styles.historySection}>
                             <TouchableOpacity onPress={() => toggleHistory(key)}>
@@ -210,17 +287,17 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                             {histExpanded && (
                               <View style={styles.historyList}>
                                 {(() => {
-                                  // Prepare chronologically sorted data for the chart (excluding the active "New Load" which isn't saved yet)
-                                  // history array is already sorted DESC. We reverse it for chronological plotting.
+                                  // Prepare chronologically sorted data for chart
                                   const chartData = [...history].reverse();
                                   
                                   const labels = chartData.map(h => {
-                                    const d = new Date(h.date);
-                                    return `${d.getMonth()+1}/${d.getDate()}`; // MM/DD
+                                    const d = h.dateObj;
+                                    return `${d.getMonth()+1}/${d.getDate()}`;
                                   });
                                   
-                                  const weights = chartData.map(h => parseFloat(h.weightLifted) || 0);
-                                  const repsData = chartData.map(h => parseInt(h.reps) || 0);
+                                  // Max weight and Total Reps logic
+                                  const weights = chartData.map(h => Math.max(...h.setsData.map((s:any) => s.weightLifted)) || 0);
+                                  const repsData = chartData.map(h => h.setsData.reduce((sum:number, s:any) => sum + s.reps, 0) || 0);
 
                                   return (
                                     <>
@@ -230,18 +307,18 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                                           datasets: [
                                             {
                                               data: weights,
-                                              color: (opacity = 1) => `rgba(3, 218, 198, ${opacity})`, // Cyan for weight
+                                              color: (opacity = 1) => `rgba(3, 218, 198, ${opacity})`,
                                               strokeWidth: 2
                                             },
                                             {
                                               data: repsData,
-                                              color: (opacity = 1) => `rgba(187, 134, 252, ${opacity})`, // Purple for reps
+                                              color: (opacity = 1) => `rgba(187, 134, 252, ${opacity})`,
                                               strokeWidth: 2
                                             }
                                           ],
-                                          legend: ['Weight (kg)', 'Reps']
+                                          legend: ['Max Weight (kg)', 'Total Reps']
                                         }}
-                                        width={Dimensions.get('window').width - 70} // Responsive width
+                                        width={Dimensions.get('window').width - 70}
                                         height={180}
                                         chartConfig={{
                                           backgroundColor: '#1a1a1a',
@@ -257,9 +334,14 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                                         style={{ marginVertical: 8, borderRadius: 8 }}
                                       />
                                       {history.slice(1).map((h, i) => (
-                                        <Text key={i} style={styles.historyItemText}>
-                                          {h.date}: {h.weightLifted} kg × {h.sets} sets × {h.reps} reps
-                                        </Text>
+                                        <View key={i} style={styles.historyItemBox}>
+                                          <Text style={styles.historyItemDate}>{h.date}</Text>
+                                          {h.setsData.map((s:any, idx:number) => (
+                                            <Text key={idx} style={styles.historyItemText}>
+                                              Set {idx + 1}: {s.weightLifted} kg × {s.reps} reps
+                                            </Text>
+                                          ))}
+                                        </View>
                                       ))}
                                     </>
                                   );
@@ -269,38 +351,43 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                           </View>
                         )}
 
-                        {/* Add New Load */}
+                        {/* Add New Load (Set by Set) */}
                         <View style={styles.newLoadSection}>
                           <Text style={styles.newLoadTitle}>Add New Load</Text>
-                          <View style={styles.inputsRow}>
-                            <View style={styles.inputGroup}>
-                              <Text style={styles.inputLabel}>Weight (kg)</Text>
-                              <TextInput
-                                style={styles.input}
-                                keyboardType="numeric"
-                                value={loadState.weightLifted}
-                                onChangeText={(val) => updateNewLoad(key, 'weightLifted', val)}
-                              />
-                            </View>
-                            <View style={styles.inputGroup}>
-                              <Text style={styles.inputLabel}>Sets</Text>
-                              <TextInput
-                                style={styles.input}
-                                keyboardType="numeric"
-                                value={loadState.sets}
-                                onChangeText={(val) => updateNewLoad(key, 'sets', val)}
-                              />
-                            </View>
-                            <View style={styles.inputGroup}>
-                              <Text style={styles.inputLabel}>Reps</Text>
-                              <TextInput
-                                style={styles.input}
-                                keyboardType="numeric"
-                                value={loadState.reps}
-                                onChangeText={(val) => updateNewLoad(key, 'reps', val)}
-                              />
-                            </View>
+                          
+                          <View style={styles.numSetsRow}>
+                            <Text style={styles.numSetsLabel}>Number of Sets:</Text>
+                            <TextInput
+                              style={styles.numSetsInput}
+                              keyboardType="numeric"
+                              value={loadState.numSets}
+                              onChangeText={(val) => updateSetCount(key, val)}
+                            />
                           </View>
+
+                          {loadState.setsData.map((setObj: any, sIdx: number) => (
+                            <View key={sIdx} style={styles.setRow}>
+                              <Text style={styles.setLabel}>Set {sIdx + 1}</Text>
+                              <View style={styles.setInputGroup}>
+                                <Text style={styles.setInputLabel}>kg</Text>
+                                <TextInput
+                                  style={styles.setInput}
+                                  keyboardType="numeric"
+                                  value={setObj.weightLifted}
+                                  onChangeText={(val) => updateSetData(key, sIdx, 'weightLifted', val)}
+                                />
+                              </View>
+                              <View style={styles.setInputGroup}>
+                                <Text style={styles.setInputLabel}>reps</Text>
+                                <TextInput
+                                  style={styles.setInput}
+                                  keyboardType="numeric"
+                                  value={setObj.reps}
+                                  onChangeText={(val) => updateSetData(key, sIdx, 'reps', val)}
+                                />
+                              </View>
+                            </View>
+                          ))}
 
                           <TouchableOpacity 
                             style={styles.saveExButton} 
@@ -360,8 +447,15 @@ const styles = StyleSheet.create({
   },
   dayTitle: {
     fontSize: 20,
-    color: '#03DAC6',
+    color: '#fff',
     fontWeight: 'bold',
+  },
+  highlightedDay: {
+    borderColor: '#03DAC6',
+    borderWidth: 2,
+  },
+  highlightedText: {
+    color: '#03DAC6',
   },
   muscleSummary: {
     color: '#aaa',
@@ -428,8 +522,8 @@ const styles = StyleSheet.create({
   },
   lastLoadText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    marginBottom: 2,
   },
   historySection: {
     marginBottom: 12,
@@ -446,10 +540,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
     borderRadius: 8,
   },
+  historyItemBox: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+    paddingBottom: 8,
+    marginBottom: 8,
+  },
+  historyItemDate: {
+    color: '#03DAC6',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
   historyItemText: {
     color: '#bbb',
     fontSize: 13,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   newLoadSection: {
     marginTop: 5,
@@ -459,34 +565,68 @@ const styles = StyleSheet.create({
   },
   newLoadTitle: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
   },
-  inputsRow: {
+  numSetsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
-  inputGroup: {
-    flex: 1,
-    marginHorizontal: 5,
+  numSetsLabel: {
+    color: '#fff',
+    fontSize: 14,
+    marginRight: 10,
   },
-  inputLabel: {
-    color: '#999',
-    fontSize: 11,
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  input: {
+  numSetsInput: {
     backgroundColor: '#111',
     color: '#fff',
-    padding: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 15,
     borderRadius: 6,
     textAlign: 'center',
     fontSize: 16,
     fontWeight: 'bold',
     borderWidth: 1,
     borderColor: '#444',
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    backgroundColor: '#222',
+    padding: 10,
+    borderRadius: 8,
+  },
+  setLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    width: 50,
+  },
+  setInputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 15,
+  },
+  setInputLabel: {
+    color: '#999',
+    fontSize: 12,
+    marginRight: 5,
+  },
+  setInput: {
+    backgroundColor: '#111',
+    color: '#fff',
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 6,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: '#444',
+    minWidth: 60,
   },
   saveExButton: {
     backgroundColor: '#03DAC6',
