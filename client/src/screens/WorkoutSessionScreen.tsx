@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
 import { getWorkoutLogsForPlan, saveWorkoutLogLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
 
@@ -208,11 +209,61 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                             </TouchableOpacity>
                             {histExpanded && (
                               <View style={styles.historyList}>
-                                {history.slice(1).map((h, i) => (
-                                  <Text key={i} style={styles.historyItemText}>
-                                    {h.date}: {h.weightLifted} kg × {h.sets} sets × {h.reps} reps
-                                  </Text>
-                                ))}
+                                {(() => {
+                                  // Prepare chronologically sorted data for the chart (excluding the active "New Load" which isn't saved yet)
+                                  // history array is already sorted DESC. We reverse it for chronological plotting.
+                                  const chartData = [...history].reverse();
+                                  
+                                  const labels = chartData.map(h => {
+                                    const d = new Date(h.date);
+                                    return `${d.getMonth()+1}/${d.getDate()}`; // MM/DD
+                                  });
+                                  
+                                  const weights = chartData.map(h => parseFloat(h.weightLifted) || 0);
+                                  const repsData = chartData.map(h => parseInt(h.reps) || 0);
+
+                                  return (
+                                    <>
+                                      <LineChart
+                                        data={{
+                                          labels: labels,
+                                          datasets: [
+                                            {
+                                              data: weights,
+                                              color: (opacity = 1) => `rgba(3, 218, 198, ${opacity})`, // Cyan for weight
+                                              strokeWidth: 2
+                                            },
+                                            {
+                                              data: repsData,
+                                              color: (opacity = 1) => `rgba(187, 134, 252, ${opacity})`, // Purple for reps
+                                              strokeWidth: 2
+                                            }
+                                          ],
+                                          legend: ['Weight (kg)', 'Reps']
+                                        }}
+                                        width={Dimensions.get('window').width - 70} // Responsive width
+                                        height={180}
+                                        chartConfig={{
+                                          backgroundColor: '#1a1a1a',
+                                          backgroundGradientFrom: '#1a1a1a',
+                                          backgroundGradientTo: '#1a1a1a',
+                                          decimalPlaces: 0,
+                                          color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                                          labelColor: (opacity = 1) => `rgba(150, 150, 150, ${opacity})`,
+                                          style: { borderRadius: 8 },
+                                          propsForDots: { r: '4', strokeWidth: '1', stroke: '#fff' }
+                                        }}
+                                        bezier
+                                        style={{ marginVertical: 8, borderRadius: 8 }}
+                                      />
+                                      {history.slice(1).map((h, i) => (
+                                        <Text key={i} style={styles.historyItemText}>
+                                          {h.date}: {h.weightLifted} kg × {h.sets} sets × {h.reps} reps
+                                        </Text>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
                               </View>
                             )}
                           </View>
