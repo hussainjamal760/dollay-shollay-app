@@ -13,13 +13,7 @@ export const initDB = async () => {
         first_name TEXT,
         last_name TEXT,
         email TEXT UNIQUE,
-        sync_status INTEGER DEFAULT 0,
-        profile_completed INTEGER DEFAULT 0,
-        body_type TEXT,
-        age INTEGER,
-        weight REAL,
-        goals TEXT,
-        experience INTEGER
+        sync_status INTEGER DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS workout_plans (
@@ -31,6 +25,25 @@ export const initDB = async () => {
         sync_status INTEGER DEFAULT 0
       );
     `);
+
+    // Add new columns if they don't exist
+    const columnsToAdd = [
+      'profile_completed INTEGER DEFAULT 0',
+      'body_type TEXT',
+      'age INTEGER',
+      'weight REAL',
+      'goals TEXT',
+      'experience INTEGER'
+    ];
+
+    for (const col of columnsToAdd) {
+      try {
+        await db.execAsync(`ALTER TABLE users ADD COLUMN ${col};`);
+      } catch (e) {
+        // Column probably already exists
+      }
+    }
+
   } catch (error) {
   }
 };
