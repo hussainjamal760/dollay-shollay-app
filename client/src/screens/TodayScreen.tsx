@@ -48,10 +48,13 @@ export default function TodayScreen({ navigation }: any) {
       </View>
 
       {activeWorkout ? (
-        <View style={styles.activeCard}>
+        <TouchableOpacity 
+          style={styles.activeCard}
+          onPress={() => navigation.navigate('WorkoutSession', { plan: activeWorkout })}
+        >
           <Text style={styles.activeLabel}>ACTIVE PLAN</Text>
           <Text style={styles.activeTitle}>{activeWorkout.name}</Text>
-        </View>
+        </TouchableOpacity>
       ) : null}
 
       <Text style={styles.sectionTitle}>All Plans</Text>
@@ -59,10 +62,13 @@ export default function TodayScreen({ navigation }: any) {
         data={workouts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.planCard}>
+          <TouchableOpacity 
+            style={styles.planCard}
+            onPress={() => navigation.navigate('WorkoutSession', { plan: item })}
+          >
             <Text style={styles.planName}>{item.name}</Text>
             {item.is_active === 1 && <Text style={styles.activeBadge}>Active</Text>}
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>

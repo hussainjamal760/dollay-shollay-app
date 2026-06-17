@@ -6,6 +6,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import CreateWorkoutScreen from '../screens/CreateWorkoutScreen';
+import WorkoutSessionScreen from '../screens/WorkoutSessionScreen';
 import type { RootStackParamList } from './types';
 import * as SecureStore from 'expo-secure-store';
 import { ActivityIndicator, View, DeviceEventEmitter } from 'react-native';
@@ -99,6 +100,11 @@ export default function RootNavigator() {
             name="CreateWorkout"
             component={CreateWorkoutScreen}
             options={{ title: 'Create Workout Plan' }}
+          />
+          <Stack.Screen
+            name="WorkoutSession"
+            component={WorkoutSessionScreen}
+            options={{ title: 'Workout Session' }}
           />
         </>
       )}

@@ -1,5 +1,5 @@
 import NetInfo from '@react-native-community/netinfo';
-import { getUnsyncedUsers, markUserAsSynced, getUnsyncedWorkouts, markWorkoutAsSynced } from '../database/db';
+import { getUnsyncedUsers, markUserAsSynced, getUnsyncedWorkouts, markWorkoutAsSynced, getUnsyncedLogs, markLogAsSynced } from '../database/db';
 import api from './api';
 
 export const syncDataWithServer = async () => {
@@ -41,6 +41,26 @@ export const syncDataWithServer = async () => {
           if (response.data.success) {
             for (const w of unsyncedWorkouts as any[]) {
               await markWorkoutAsSynced(w.id, w.server_id || `offline_${w.id}`);
+            }
+          }
+        } catch (err) {
+        }
+      }
+
+      const unsyncedLogs = await getUnsyncedLogs();
+      if (unsyncedLogs.length > 0) {
+        try {
+          const logsPayload = (unsyncedLogs as any[]).map(l => ({
+            server_id: l.server_id,
+            planId: l.plan_id,
+            planName: l.plan_name,
+            date: l.date,
+            exercises: l.exercises ? JSON.parse(l.exercises) : []
+          }));
+          const response = await api.post('/logs/sync', { logs: logsPayload });
+          if (response.data.success) {
+            for (const l of unsyncedLogs as any[]) {
+              await markLogAsSynced(l.id, l.server_id || `offline_${l.id}`);
             }
           }
         } catch (err) {

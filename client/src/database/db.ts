@@ -24,6 +24,16 @@ export const initDB = async () => {
         days TEXT,
         sync_status INTEGER DEFAULT 0
       );
+
+      CREATE TABLE IF NOT EXISTS workout_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id TEXT UNIQUE,
+        plan_id TEXT,
+        plan_name TEXT,
+        date TEXT,
+        exercises TEXT,
+        sync_status INTEGER DEFAULT 0
+      );
     `);
 
     // Add new columns if they don't exist
@@ -143,6 +153,65 @@ export const markWorkoutAsSynced = async (id: number, serverId: string) => {
   if (!db) await initDB();
   try {
     await db!.runAsync(`UPDATE workout_plans SET sync_status = 1, server_id = ? WHERE id = ?`, [serverId, id]);
+  } catch (error) {
+  }
+};
+
+export const saveWorkoutLogLocally = async (log: any, synced = false) => {
+  if (!db) await initDB();
+  try {
+    const syncStatus = synced ? 1 : 0;
+    const exercisesStr = JSON.stringify(log.exercises || []);
+    
+    if (log.server_id) {
+      await db!.runAsync(
+        `INSERT OR REPLACE INTO workout_logs (server_id, plan_id, plan_name, date, exercises, sync_status) VALUES (?, ?, ?, ?, ?, ?)`,
+        [log.server_id, log.planId, log.planName, log.date, exercisesStr, syncStatus]
+      );
+    } else {
+      await db!.runAsync(
+        `INSERT INTO workout_logs (plan_id, plan_name, date, exercises, sync_status) VALUES (?, ?, ?, ?, ?)`,
+        [log.planId, log.planName, log.date, exercisesStr, syncStatus]
+      );
+    }
+  } catch (error) {
+  }
+};
+
+export const getWorkoutLogsLocally = async () => {
+  if (!db) await initDB();
+  try {
+    const rows = await db!.getAllAsync(`SELECT * FROM workout_logs ORDER BY id DESC`);
+    return rows;
+  } catch (error) {
+    return [];
+  }
+};
+
+export const getWorkoutLogsForPlan = async (planId: string) => {
+  if (!db) await initDB();
+  try {
+    const rows = await db!.getAllAsync(`SELECT * FROM workout_logs WHERE plan_id = ? ORDER BY date DESC`, [planId]);
+    return rows;
+  } catch (error) {
+    return [];
+  }
+};
+
+export const getUnsyncedLogs = async () => {
+  if (!db) await initDB();
+  try {
+    const rows = await db!.getAllAsync(`SELECT * FROM workout_logs WHERE sync_status = 0`);
+    return rows;
+  } catch (error) {
+    return [];
+  }
+};
+
+export const markLogAsSynced = async (id: number, serverId: string) => {
+  if (!db) await initDB();
+  try {
+    await db!.runAsync(`UPDATE workout_logs SET sync_status = 1, server_id = ? WHERE id = ?`, [serverId, id]);
   } catch (error) {
   }
 };
