@@ -13,27 +13,41 @@ export const initDB = async () => {
         first_name TEXT,
         last_name TEXT,
         email TEXT UNIQUE,
-        sync_status INTEGER DEFAULT 0
+        sync_status INTEGER DEFAULT 0,
+        profile_completed INTEGER DEFAULT 0,
+        body_type TEXT,
+        age INTEGER,
+        weight REAL,
+        goals TEXT,
+        experience INTEGER
       );
     `);
-    console.log('Database initialized successfully');
   } catch (error) {
-    console.error('Error initializing database', error);
   }
 };
 
-export const saveUserLocally = async (user: { id: string, firstName: string, lastName: string, email: string }, synced = false) => {
+export const saveUserLocally = async (user: any, synced = false) => {
   if (!db) await initDB();
   try {
     const syncStatus = synced ? 1 : 0;
-    // @ts-ignore
+    const profileCompleted = user.profileCompleted ? 1 : 0;
+    const goalsStr = user.goals ? JSON.stringify(user.goals) : null;
+    
     await db!.runAsync(
-      `INSERT OR REPLACE INTO users (server_id, first_name, last_name, email, sync_status) VALUES (?, ?, ?, ?, ?)`,
-      [user.id, user.firstName, user.lastName, user.email, syncStatus]
+      `INSERT OR REPLACE INTO users (server_id, first_name, last_name, email, sync_status, profile_completed, body_type, age, weight, goals, experience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user.id, user.firstName, user.lastName, user.email, syncStatus, profileCompleted, user.bodyType || null, user.age || null, user.weight || null, goalsStr, user.experience || null]
     );
-    console.log('User saved locally');
   } catch (error) {
-    console.error('Error saving user locally', error);
+  }
+};
+
+export const getUserLocally = async () => {
+  if (!db) await initDB();
+  try {
+    const row = await db!.getFirstAsync(`SELECT * FROM users LIMIT 1`);
+    return row;
+  } catch (error) {
+    return null;
   }
 };
 

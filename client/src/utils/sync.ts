@@ -7,7 +7,6 @@ export const syncDataWithServer = async () => {
     const netInfo = await NetInfo.fetch();
     
     if (netInfo.isConnected) {
-      console.log('Internet connected, starting sync...');
       const unsyncedUsers = await getUnsyncedUsers();
       
       for (const user of unsyncedUsers as any[]) {
@@ -17,15 +16,17 @@ export const syncDataWithServer = async () => {
             firstName: user.first_name,
             lastName: user.last_name,
             email: user.email,
+            profileCompleted: user.profile_completed === 1,
+            bodyType: user.body_type,
+            age: user.age,
+            weight: user.weight,
+            goals: user.goals ? JSON.parse(user.goals) : undefined,
+            experience: user.experience
           });
           await markUserAsSynced(user.server_id);
-          console.log(`User ${user.email} synced successfully.`);
         } catch (err) {
-          console.error(`Failed to sync user ${user.email}`, err);
         }
       }
-    } else {
-      console.log('No internet connection, skipping sync.');
     }
   } catch (error) {
     console.error('Error during synchronization', error);

@@ -22,6 +22,25 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  profileCompleted: {
+    type: Boolean,
+    default: false
+  },
+  bodyType: {
+    type: String
+  },
+  age: {
+    type: Number
+  },
+  weight: {
+    type: Number
+  },
+  goals: {
+    type: [String]
+  },
+  experience: {
+    type: Number
+  },
   createdAt: {
     type: Date,
     default: Date.now

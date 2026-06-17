@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
-        res.json({ success: true, token, user: { id: user.id, email, firstName, lastName } });
+        res.json({ success: true, token, user: { id: user.id, email, firstName, lastName, profileCompleted: user.profileCompleted } });
       }
     );
   } catch (err) {
@@ -73,7 +73,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
-        res.json({ success: true, token, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+        res.json({ success: true, token, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profileCompleted: user.profileCompleted } });
       }
     );
   } catch (err) {
@@ -86,17 +86,34 @@ const auth = require('../middleware/auth');
 
 router.post('/sync', auth, async (req, res) => {
   try {
-    const { id, firstName, lastName, email } = req.body;
+    const { id, firstName, lastName, email, profileCompleted, bodyType, age, weight, goals, experience } = req.body;
     
     if (req.user.id !== id) {
        return res.status(401).json({ success: false, message: 'Unauthorized sync attempt' });
     }
     
-    await User.findByIdAndUpdate(id, { firstName, lastName, email });
+    await User.findByIdAndUpdate(id, { firstName, lastName, email, profileCompleted, bodyType, age, weight, goals, experience });
     res.json({ success: true, message: 'Synced successfully' });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ success: false, message: 'Server error during sync' });
+  }
+});
+
+router.post('/profile', auth, async (req, res) => {
+  try {
+    const { bodyType, age, weight, goals, experience } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { profileCompleted: true, bodyType, age, weight, goals, experience },
+      { new: true }
+    );
+    
+    res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profileCompleted: user.profileCompleted } });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ success: false, message: 'Server error saving profile' });
   }
 });
 
