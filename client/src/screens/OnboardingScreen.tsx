@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import api from '../utils/api';
 import { saveUserLocally, getUserLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
@@ -40,22 +40,24 @@ export default function OnboardingScreen({ navigation }: any) {
       });
 
       if (response.data.success) {
-        const localUser = await getUserLocally();
-        if (localUser) {
-          const updatedUser = {
-            ...localUser,
-            profileCompleted: true,
-            bodyType,
-            goals,
-            age: parseInt(age, 10),
-            weight: parseFloat(weight),
-            experience: parseInt(experience, 10)
-          };
-          await saveUserLocally(updatedUser, false);
-          await syncDataWithServer();
-        }
-        
-        Alert.alert('Success', 'Profile completed! Please restart the app.');
+        const updatedUser = {
+          ...response.data.user,
+          bodyType,
+          goals,
+          age: parseInt(age, 10),
+          weight: parseFloat(weight),
+          experience: parseInt(experience, 10)
+        };
+        await saveUserLocally(updatedUser, true);
+        await syncDataWithServer();
+        Alert.alert('Success', 'Profile completed!', [
+          {
+            text: 'OK',
+            onPress: () => {
+              DeviceEventEmitter.emit('profileCompleted');
+            }
+          }
+        ]);
       }
     } catch (error: any) {
       Alert.alert('Error', 'Failed to save profile');

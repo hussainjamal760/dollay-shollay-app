@@ -5,9 +5,10 @@ import PRScreen from '../screens/PRScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import CreateWorkoutScreen from '../screens/CreateWorkoutScreen';
 import type { RootStackParamList } from './types';
 import * as SecureStore from 'expo-secure-store';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, DeviceEventEmitter } from 'react-native';
 import { getUserLocally } from '../database/db';
 
 const Stack = createStackNavigator<any>();
@@ -18,6 +19,10 @@ export default function RootNavigator() {
   const [profileCompleted, setProfileCompleted] = useState<boolean>(false);
 
   useEffect(() => {
+    const listener = DeviceEventEmitter.addListener('profileCompleted', () => {
+      setProfileCompleted(true);
+    });
+
     const bootstrapAsync = async () => {
       let token;
       try {
@@ -33,6 +38,10 @@ export default function RootNavigator() {
     };
 
     bootstrapAsync();
+
+    return () => {
+      listener.remove();
+    };
   }, []);
 
   if (isLoading) {
@@ -85,6 +94,11 @@ export default function RootNavigator() {
             name="PRs" 
             component={PRScreen} 
             options={{ title: 'Personal Records' }} 
+          />
+          <Stack.Screen
+            name="CreateWorkout"
+            component={CreateWorkoutScreen}
+            options={{ title: 'Create Workout Plan' }}
           />
         </>
       )}

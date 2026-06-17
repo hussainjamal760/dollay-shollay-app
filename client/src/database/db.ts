@@ -21,6 +21,15 @@ export const initDB = async () => {
         goals TEXT,
         experience INTEGER
       );
+
+      CREATE TABLE IF NOT EXISTS workout_plans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id TEXT UNIQUE,
+        name TEXT,
+        is_active INTEGER DEFAULT 0,
+        days TEXT,
+        sync_status INTEGER DEFAULT 0
+      );
     `);
   } catch (error) {
   }
@@ -66,9 +75,61 @@ export const getUnsyncedUsers = async () => {
 export const markUserAsSynced = async (serverId: string) => {
   if (!db) await initDB();
   try {
-    // @ts-ignore
     await db!.runAsync(`UPDATE users SET sync_status = 1 WHERE server_id = ?`, [serverId]);
   } catch (error) {
-    console.error('Error marking user as synced', error);
+  }
+};
+
+export const saveWorkoutLocally = async (workout: any, synced = false) => {
+  if (!db) await initDB();
+  try {
+    const syncStatus = synced ? 1 : 0;
+    const isActive = workout.isActive ? 1 : 0;
+    const daysStr = JSON.stringify(workout.days || []);
+    
+    if (isActive) {
+      await db!.runAsync(`UPDATE workout_plans SET is_active = 0`);
+    }
+
+    if (workout.server_id) {
+      await db!.runAsync(
+        `INSERT OR REPLACE INTO workout_plans (server_id, name, is_active, days, sync_status) VALUES (?, ?, ?, ?, ?)`,
+        [workout.server_id, workout.name, isActive, daysStr, syncStatus]
+      );
+    } else {
+      await db!.runAsync(
+        `INSERT INTO workout_plans (name, is_active, days, sync_status) VALUES (?, ?, ?, ?)`,
+        [workout.name, isActive, daysStr, syncStatus]
+      );
+    }
+  } catch (error) {
+  }
+};
+
+export const getWorkoutsLocally = async () => {
+  if (!db) await initDB();
+  try {
+    const rows = await db!.getAllAsync(`SELECT * FROM workout_plans ORDER BY id DESC`);
+    return rows;
+  } catch (error) {
+    return [];
+  }
+};
+
+export const getUnsyncedWorkouts = async () => {
+  if (!db) await initDB();
+  try {
+    const rows = await db!.getAllAsync(`SELECT * FROM workout_plans WHERE sync_status = 0`);
+    return rows;
+  } catch (error) {
+    return [];
+  }
+};
+
+export const markWorkoutAsSynced = async (id: number, serverId: string) => {
+  if (!db) await initDB();
+  try {
+    await db!.runAsync(`UPDATE workout_plans SET sync_status = 1, server_id = ? WHERE id = ?`, [serverId, id]);
+  } catch (error) {
   }
 };
