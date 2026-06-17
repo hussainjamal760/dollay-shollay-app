@@ -13,6 +13,9 @@ export default function CreateWorkoutScreen({ navigation }: any) {
   
   const [dayMuscles, setDayMuscles] = useState<{ [day: string]: string[] }>({});
   
+  const [customMuscles, setCustomMuscles] = useState<string[]>([]);
+  const [newMuscleText, setNewMuscleText] = useState<{ [day: string]: string }>({});
+
   const [exercises, setExercises] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(false);
@@ -134,25 +137,50 @@ export default function CreateWorkoutScreen({ navigation }: any) {
   const renderStep2 = () => (
     <View style={styles.stepContainer}>
       <Text style={styles.title}>Target Muscles</Text>
-      {selectedDays.map(day => (
-        <View key={day} style={styles.daySection}>
-          <Text style={styles.dayLabel}>{day}</Text>
-          <View style={styles.tagsContainer}>
-            {MUSCLES.map(muscle => {
-              const isSelected = (dayMuscles[day] || []).includes(muscle);
-              return (
-                <TouchableOpacity
-                  key={muscle}
-                  style={[styles.tag, isSelected && styles.tagSelected]}
-                  onPress={() => toggleMuscle(day, muscle)}
-                >
-                  <Text style={[styles.tagText, isSelected && styles.tagTextSelected]}>{muscle}</Text>
-                </TouchableOpacity>
-              );
-            })}
+      {selectedDays.map(day => {
+        const allMuscles = [...MUSCLES, ...customMuscles];
+        return (
+          <View key={day} style={styles.daySection}>
+            <Text style={styles.dayLabel}>{day}</Text>
+            <View style={styles.tagsContainer}>
+              {allMuscles.map(muscle => {
+                const isSelected = (dayMuscles[day] || []).includes(muscle);
+                return (
+                  <TouchableOpacity
+                    key={muscle}
+                    style={[styles.tag, isSelected && styles.tagSelected]}
+                    onPress={() => toggleMuscle(day, muscle)}
+                  >
+                    <Text style={[styles.tagText, isSelected && styles.tagTextSelected]}>{muscle}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              
+              <TextInput
+                style={styles.customMuscleInput}
+                placeholder="+ Custom"
+                placeholderTextColor="#999"
+                value={newMuscleText[day] || ''}
+                onChangeText={(val) => setNewMuscleText({...newMuscleText, [day]: val})}
+                onSubmitEditing={() => {
+                  const val = newMuscleText[day];
+                  if (val && val.trim().length > 0) {
+                    const trimmed = val.trim();
+                    if (!customMuscles.includes(trimmed) && !MUSCLES.includes(trimmed)) {
+                      setCustomMuscles([...customMuscles, trimmed]);
+                    }
+                    const current = dayMuscles[day] || [];
+                    if (!current.includes(trimmed)) {
+                      setDayMuscles({ ...dayMuscles, [day]: [...current, trimmed] });
+                    }
+                    setNewMuscleText({...newMuscleText, [day]: ''});
+                  }
+                }}
+              />
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
       
       <View style={styles.rowButtons}>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep(1)}>
@@ -393,6 +421,16 @@ const styles = StyleSheet.create({
   tagTextSelected: {
     color: '#000',
     fontWeight: 'bold',
+  },
+  customMuscleInput: {
+    backgroundColor: '#333',
+    color: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 10,
+    minWidth: 80,
+    textAlign: 'center',
   },
   rowButtons: {
     flexDirection: 'row',
