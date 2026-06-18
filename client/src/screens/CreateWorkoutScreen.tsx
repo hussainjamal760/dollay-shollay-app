@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { saveWorkoutLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
@@ -6,7 +6,8 @@ import { syncDataWithServer } from '../utils/sync';
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MUSCLES = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Full Body'];
 
-export default function CreateWorkoutScreen({ navigation }: any) {
+export default function CreateWorkoutScreen({ route, navigation }: any) {
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -19,6 +20,46 @@ export default function CreateWorkoutScreen({ navigation }: any) {
   const [exercises, setExercises] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (route.params?.planToEdit) {
+      const p = route.params.planToEdit;
+      setEditingId(p.id);
+      setName(p.name);
+      
+      try {
+        const parsedDays = typeof p.days === 'string' ? JSON.parse(p.days) : p.days;
+        
+        const sDays = parsedDays.map((d: any) => d.dayOfWeek);
+        setSelectedDays(sDays);
+        
+        const dMuscles: any = {};
+        const exList: any[] = [];
+        let exIdCounter = 1;
+        
+        parsedDays.forEach((d: any) => {
+          dMuscles[d.dayOfWeek] = d.muscles || [];
+          (d.exercises || []).forEach((ex: any) => {
+            exList.push({
+              id: String(exIdCounter++),
+              dayOfWeek: d.dayOfWeek,
+              muscle: ex.muscle,
+              name: ex.name,
+              numSets: String(ex.setsData?.length || ex.sets || 1),
+              setsData: ex.setsData && ex.setsData.length > 0 
+                  ? ex.setsData.map((s:any) => ({ weightLifted: String(s.weightLifted), reps: String(s.reps) }))
+                  : Array.from({length: ex.sets || 1}).map(() => ({ weightLifted: '', reps: '' }))
+            });
+          });
+        });
+        
+        setDayMuscles(dMuscles);
+        setExercises(exList);
+      } catch (e) {
+        console.log('Error parsing days for edit:', e);
+      }
+    }
+  }, [route.params]);
 
   const toggleDay = (day: string) => {
     if (selectedDays.includes(day)) {
@@ -121,6 +162,7 @@ export default function CreateWorkoutScreen({ navigation }: any) {
     }));
 
     const workout = {
+      id: editingId,
       name,
       isActive: true,
       days: daysPayload

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
-import { getWorkoutsLocally } from '../database/db';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { getWorkoutsLocally, deleteWorkoutLocally } from '../database/db';
 import { useIsFocused } from '@react-navigation/native';
 
 export default function TodayScreen({ navigation }: any) {
@@ -19,6 +19,20 @@ export default function TodayScreen({ navigation }: any) {
   };
 
   const activeWorkout = workouts.find(w => w.is_active === 1);
+
+  const handleDelete = (id: number, name: string) => {
+    Alert.alert('Delete Plan', `Are you sure you want to delete "${name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        await deleteWorkoutLocally(id);
+        loadWorkouts();
+      }}
+    ]);
+  };
+
+  const handleEdit = (plan: any) => {
+    navigation.navigate('CreateWorkout', { planToEdit: plan });
+  };
 
   if (workouts.length === 0) {
     return (
@@ -62,13 +76,24 @@ export default function TodayScreen({ navigation }: any) {
         data={workouts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.planCard}
-            onPress={() => navigation.navigate('WorkoutSession', { plan: item })}
-          >
-            <Text style={styles.planName}>{item.name}</Text>
-            {item.is_active === 1 && <Text style={styles.activeBadge}>Active</Text>}
-          </TouchableOpacity>
+          <View style={styles.planCard}>
+            <TouchableOpacity 
+              style={{ flex: 1 }}
+              onPress={() => navigation.navigate('WorkoutSession', { plan: item })}
+            >
+              <Text style={styles.planName}>{item.name}</Text>
+              {item.is_active === 1 && <Text style={styles.activeBadge}>Active</Text>}
+            </TouchableOpacity>
+            
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity onPress={() => handleEdit(item)} style={styles.actionBtn}>
+                <Text style={styles.actionTextEdit}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDelete(item.id, item.name)} style={styles.actionBtn}>
+                <Text style={styles.actionTextDelete}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
       />
     </View>
@@ -188,5 +213,23 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 10,
     overflow: 'hidden',
+    alignSelf: 'flex-start',
+    marginTop: 5,
+  },
+  actionBtn: {
+    padding: 8,
+    marginLeft: 5,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 6,
+  },
+  actionTextEdit: {
+    color: '#03DAC6',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  actionTextDelete: {
+    color: '#CF6679',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });

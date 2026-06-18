@@ -118,7 +118,12 @@ export const saveWorkoutLocally = async (workout: any, synced = false) => {
       await db!.runAsync(`UPDATE workout_plans SET is_active = 0`);
     }
 
-    if (workout.server_id) {
+    if (workout.id) {
+      await db!.runAsync(
+        `UPDATE workout_plans SET name = ?, is_active = ?, days = ?, sync_status = ? WHERE id = ?`,
+        [workout.name, isActive, daysStr, syncStatus, workout.id]
+      );
+    } else if (workout.server_id) {
       await db!.runAsync(
         `INSERT OR REPLACE INTO workout_plans (server_id, name, is_active, days, sync_status) VALUES (?, ?, ?, ?, ?)`,
         [workout.server_id, workout.name, isActive, daysStr, syncStatus]
@@ -129,6 +134,14 @@ export const saveWorkoutLocally = async (workout: any, synced = false) => {
         [workout.name, isActive, daysStr, syncStatus]
       );
     }
+  } catch (error) {
+  }
+};
+
+export const deleteWorkoutLocally = async (id: number) => {
+  if (!db) await initDB();
+  try {
+    await db!.runAsync(`DELETE FROM workout_plans WHERE id = ?`, [id]);
   } catch (error) {
   }
 };
