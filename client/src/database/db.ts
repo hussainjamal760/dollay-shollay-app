@@ -34,6 +34,18 @@ export const initDB = async () => {
         exercises TEXT,
         sync_status INTEGER DEFAULT 0
       );
+
+      CREATE TABLE IF NOT EXISTS diet_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id TEXT UNIQUE,
+        date TEXT,
+        food_text TEXT,
+        protein REAL,
+        carbs REAL,
+        fat REAL,
+        calories REAL,
+        sync_status INTEGER DEFAULT 0
+      );
     `);
 
     // Add new columns if they don't exist
@@ -229,6 +241,48 @@ export const markLogAsSynced = async (id: number, serverId: string) => {
   if (!db) await initDB();
   try {
     await db!.runAsync(`UPDATE workout_logs SET sync_status = 1, server_id = ? WHERE id = ?`, [serverId, id]);
+  } catch (error) {
+  }
+};
+
+export const saveDietLogLocally = async (log: any, synced = false) => {
+  if (!db) await initDB();
+  try {
+    const syncStatus = synced ? 1 : 0;
+    if (log.id) {
+       await db!.runAsync(
+         `UPDATE diet_logs SET date = ?, food_text = ?, protein = ?, carbs = ?, fat = ?, calories = ?, sync_status = ? WHERE id = ?`,
+         [log.date, log.food_text, log.protein, log.carbs, log.fat, log.calories, syncStatus, log.id]
+       );
+    } else if (log.server_id) {
+      await db!.runAsync(
+        `INSERT OR REPLACE INTO diet_logs (server_id, date, food_text, protein, carbs, fat, calories, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [log.server_id, log.date, log.food_text, log.protein, log.carbs, log.fat, log.calories, syncStatus]
+      );
+    } else {
+      await db!.runAsync(
+        `INSERT INTO diet_logs (date, food_text, protein, carbs, fat, calories, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [log.date, log.food_text, log.protein, log.carbs, log.fat, log.calories, syncStatus]
+      );
+    }
+  } catch (error) {
+  }
+};
+
+export const getDietLogsLocally = async () => {
+  if (!db) await initDB();
+  try {
+    const rows = await db!.getAllAsync(`SELECT * FROM diet_logs ORDER BY date DESC, id DESC`);
+    return rows;
+  } catch (error) {
+    return [];
+  }
+};
+
+export const deleteDietLogLocally = async (id: number) => {
+  if (!db) await initDB();
+  try {
+    await db!.runAsync(`DELETE FROM diet_logs WHERE id = ?`, [id]);
   } catch (error) {
   }
 };

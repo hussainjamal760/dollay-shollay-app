@@ -168,4 +168,54 @@ Do not write a long essay. Keep it punchy and encouraging.`
   }
 });
 
+router.post('/analyze-food', async (req, res) => {
+  try {
+    const { foodText } = req.body;
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are an expert nutritionist. The user will provide a text describing what they ate (in English or Urdu/Roman Urdu).
+Analyze the food and estimate the macronutrients.
+Return the result strictly in this JSON format:
+{
+  "protein": 25,
+  "carbs": 30,
+  "fat": 10,
+  "calories": 310
+}
+Use reasonable estimates. Only return valid JSON, no other text.`
+      },
+      {
+        role: "user",
+        content: foodText
+      }
+    ];
+
+    const completion = await groq.chat.completions.create({
+      messages: messages,
+      model: "llama3-8b-8192",
+      temperature: 0.3,
+      max_tokens: 150,
+      response_format: { type: "json_object" }
+    });
+
+    const macros = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    
+    res.json({
+      success: true,
+      macros: {
+        protein: macros.protein || 0,
+        carbs: macros.carbs || 0,
+        fat: macros.fat || 0,
+        calories: macros.calories || 0
+      }
+    });
+
+  } catch (error) {
+    console.error('AI Analyze Food error:', error);
+    res.status(500).json({ success: false, error: 'Failed to analyze food.' });
+  }
+});
+
 module.exports = router;

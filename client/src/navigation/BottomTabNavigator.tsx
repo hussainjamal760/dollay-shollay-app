@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import TodayScreen from '../screens/TodayScreen';
 import ProgressScreen from '../screens/ProgressScreen';
-import LibraryScreen from '../screens/LibraryScreen';
+import DietScreen from '../screens/DietScreen';
 import AICoachScreen from '../screens/AICoachScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import type { BottomTabParamList } from './types';
@@ -20,8 +20,8 @@ export default function BottomTabNavigator() {
             iconName = focused ? 'barbell' : 'barbell-outline';
           } else if (route.name === 'Progress') {
             iconName = focused ? 'trophy' : 'trophy-outline';
-          } else if (route.name === 'Library') {
-            iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'Diet') {
+            iconName = focused ? 'restaurant' : 'restaurant-outline';
           } else if (route.name === 'AICoach') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'Settings') {
@@ -46,7 +46,7 @@ export default function BottomTabNavigator() {
     >
       <Tab.Screen name="Today" component={TodayScreen} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
-      <Tab.Screen name="Library" component={LibraryScreen} />
+      <Tab.Screen name="Diet" component={DietScreen} />
       <Tab.Screen name="AICoach" component={AICoachScreen} options={{ title: 'AI Coach' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
