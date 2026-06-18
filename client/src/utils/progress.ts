@@ -23,10 +23,31 @@ export const calculateProgressStats = async () => {
   const uniqueDates = new Set<string>();
   let totalVolume = 0;
 
+  const maxWeightMap: { [exName: string]: number } = {};
+  
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  let lastMonth = currentMonth - 1;
+  let lastMonthYear = currentYear;
+  if (lastMonth < 0) {
+    lastMonth = 11;
+    lastMonthYear--;
+  }
+
+  const thisMonthDates = new Set<string>();
+  const lastMonthDates = new Set<string>();
+
   allLogs.forEach((log: any) => {
     const d = new Date(log.date);
-    const dateStr = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const dateStr = `${y}-${m}-${d.getDate()}`;
     uniqueDates.add(dateStr);
+
+    if (m === currentMonth && y === currentYear) thisMonthDates.add(dateStr);
+    if (m === lastMonth && y === lastMonthYear) lastMonthDates.add(dateStr);
     
     let exList = [];
     try {
@@ -36,7 +57,12 @@ export const calculateProgressStats = async () => {
     exList.forEach((ex: any) => {
        if (ex.setsData) {
          ex.setsData.forEach((s: any) => {
-           totalVolume += ((parseFloat(s.weightLifted) || 0) * (parseInt(s.reps) || 0));
+           const weight = parseFloat(s.weightLifted) || 0;
+           totalVolume += (weight * (parseInt(s.reps) || 0));
+           
+           if (!maxWeightMap[ex.name] || weight > maxWeightMap[ex.name]) {
+             maxWeightMap[ex.name] = weight;
+           }
          });
        }
     });
@@ -75,9 +101,21 @@ export const calculateProgressStats = async () => {
     }
   }
 
+  const prs = Object.keys(maxWeightMap)
+    .map(name => ({ name, weight: maxWeightMap[name] }))
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 4);
+
+  const monthlyStats = {
+    thisMonth: thisMonthDates.size,
+    lastMonth: lastMonthDates.size
+  };
+
   return {
     totalVolume,
     totalWorkouts,
-    currentStreak
+    currentStreak,
+    prs,
+    monthlyStats
   };
 };

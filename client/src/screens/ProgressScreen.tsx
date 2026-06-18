@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions } from 'react-native';
+import { BarChart } from 'react-native-chart-kit';
 import { calculateProgressStats } from '../utils/progress';
 import { useIsFocused } from '@react-navigation/native';
 
 export default function ProgressScreen() {
-  const [stats, setStats] = useState({ totalVolume: 0, totalWorkouts: 0, currentStreak: 0 });
+  const [stats, setStats] = useState({ 
+    totalVolume: 0, 
+    totalWorkouts: 0, 
+    currentStreak: 0,
+    prs: [] as { name: string, weight: number }[],
+    monthlyStats: { thisMonth: 0, lastMonth: 0 }
+  });
   const [refreshing, setRefreshing] = useState(false);
   const isFocused = useIsFocused();
 
@@ -59,6 +66,48 @@ export default function ProgressScreen() {
           <Text style={styles.statLabel}>Workouts</Text>
         </View>
       </View>
+
+      <Text style={styles.sectionTitle}>Monthly Activity</Text>
+      <View style={styles.chartContainer}>
+        <BarChart
+          data={{
+            labels: ['Last Month', 'This Month'],
+            datasets: [{ data: [stats.monthlyStats.lastMonth, stats.monthlyStats.thisMonth] }]
+          }}
+          width={Dimensions.get('window').width - 40}
+          height={200}
+          yAxisLabel=""
+          yAxisSuffix=""
+          fromZero
+          chartConfig={{
+            backgroundColor: '#1e1e1e',
+            backgroundGradientFrom: '#1e1e1e',
+            backgroundGradientTo: '#1e1e1e',
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(3, 218, 198, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+            barPercentage: 0.8,
+            propsForBackgroundLines: { strokeDasharray: '', stroke: '#333' }
+          }}
+          style={{ borderRadius: 12, marginVertical: 8 }}
+          showValuesOnTopOfBars
+        />
+      </View>
+
+      <Text style={styles.sectionTitle}>All-Time PRs</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.prsScroll}>
+        {stats.prs.length > 0 ? (
+          stats.prs.map((pr, idx) => (
+            <View key={idx} style={styles.prCard}>
+              <Text style={styles.prName} numberOfLines={1}>{pr.name}</Text>
+              <Text style={styles.prWeight}>{pr.weight} kg</Text>
+              <Text style={styles.prLabel}>Max Lift</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noPrText}>Start lifting to set your first PR!</Text>
+        )}
+      </ScrollView>
 
       <Text style={styles.sectionTitle}>Achievements</Text>
       
@@ -180,5 +229,50 @@ const styles = StyleSheet.create({
   },
   lockIcon: {
     fontSize: 16,
+  },
+  chartContainer: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+    padding: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  prsScroll: {
+    marginBottom: 20,
+  },
+  prCard: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bb86fc',
+    padding: 15,
+    marginRight: 10,
+    width: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prName: {
+    color: '#aaa',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  prWeight: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  prLabel: {
+    color: '#bb86fc',
+    fontSize: 12,
+    marginTop: 5,
+  },
+  noPrText: {
+    color: '#888',
+    fontStyle: 'italic',
+    padding: 10,
   },
 });
