@@ -43,7 +43,10 @@ export const initDB = async () => {
       'age INTEGER',
       'weight REAL',
       'goals TEXT',
-      'experience INTEGER'
+      'experience INTEGER',
+      'activity_level TEXT',
+      'constraints TEXT',
+      'focus_areas TEXT'
     ];
 
     for (const col of columnsToAdd) {
@@ -64,10 +67,11 @@ export const saveUserLocally = async (user: any, synced = false) => {
     const syncStatus = synced ? 1 : 0;
     const profileCompleted = user.profileCompleted ? 1 : 0;
     const goalsStr = user.goals ? JSON.stringify(user.goals) : null;
+    const focusAreasStr = user.focusAreas ? JSON.stringify(user.focusAreas) : null;
     
     await db!.runAsync(
-      `INSERT OR REPLACE INTO users (server_id, first_name, last_name, email, sync_status, profile_completed, body_type, age, weight, goals, experience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user.id, user.firstName, user.lastName, user.email, syncStatus, profileCompleted, user.bodyType || null, user.age || null, user.weight || null, goalsStr, user.experience || null]
+      `INSERT OR REPLACE INTO users (server_id, first_name, last_name, email, sync_status, profile_completed, body_type, age, weight, goals, experience, activity_level, constraints, focus_areas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user.id, user.firstName, user.lastName, user.email, syncStatus, profileCompleted, user.bodyType || null, user.age || null, user.weight || null, goalsStr, user.experience || null, user.activityLevel || null, user.constraints || null, focusAreasStr]
     );
   } catch (error) {
   }

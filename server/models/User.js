@@ -41,6 +41,15 @@ const userSchema = new mongoose.Schema({
   experience: {
     type: Number
   },
+  activityLevel: {
+    type: String
+  },
+  constraints: {
+    type: String
+  },
+  focusAreas: {
+    type: [String]
+  },
   createdAt: {
     type: Date,
     default: Date.now

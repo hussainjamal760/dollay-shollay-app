@@ -5,6 +5,7 @@ import PRScreen from '../screens/PRScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import AIWorkoutChoiceScreen from '../screens/AIWorkoutChoiceScreen';
 import CreateWorkoutScreen from '../screens/CreateWorkoutScreen';
 import WorkoutSessionScreen from '../screens/WorkoutSessionScreen';
 import type { RootStackParamList } from './types';
@@ -86,6 +87,11 @@ export default function RootNavigator() {
           <Stack.Screen
             name="Onboarding"
             component={OnboardingScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="AIWorkoutChoice"
+            component={AIWorkoutChoiceScreen}
             options={{ headerShown: false }}
           />
         </>

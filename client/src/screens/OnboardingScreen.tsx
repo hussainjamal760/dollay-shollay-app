@@ -1,31 +1,43 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import api from '../utils/api';
-import { saveUserLocally, getUserLocally } from '../database/db';
+import { saveUserLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
 
-const BODY_TYPES = ['Ectomorph', 'Mesomorph', 'Endomorph', 'Skinny Fat'];
-const GOALS = ['Build Muscle', 'Lose Fat', 'Improve Endurance', 'General Fitness', 'Powerlifting', 'Bodybuilding'];
+const BODY_TYPES = [
+  { label: 'Slim / Hard to gain weight', value: 'Ectomorph' },
+  { label: 'Athletic / Normal', value: 'Mesomorph' },
+  { label: 'Heavy / Easy to gain weight', value: 'Endomorph' }
+];
+
+const GOALS = ['Build Muscle', 'Lose Fat', 'Get Stronger', 'General Health'];
+const ACTIVITY_LEVELS = ['Sitting all day', 'Active job/lifestyle', 'Very Active/Athlete'];
+const EXPERIENCE_LEVELS = [
+  { label: 'Just Starting', value: 0 },
+  { label: 'Some Experience (1-2 yrs)', value: 1 },
+  { label: 'Advanced (3+ yrs)', value: 3 }
+];
+const FOCUS_AREAS = ['Chest', 'Back', 'Legs', 'Arms', 'Shoulders', 'Core'];
 
 export default function OnboardingScreen({ navigation }: any) {
   const [bodyType, setBodyType] = useState<string | null>(null);
   const [goals, setGoals] = useState<string[]>([]);
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
-  const [experience, setExperience] = useState('');
+  const [experience, setExperience] = useState<number | null>(null);
+  const [activityLevel, setActivityLevel] = useState<string | null>(null);
+  const [focusAreas, setFocusAreas] = useState<string[]>([]);
+  const [constraints, setConstraints] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const toggleGoal = (goal: string) => {
-    if (goals.includes(goal)) {
-      setGoals(goals.filter(g => g !== goal));
-    } else {
-      setGoals([...goals, goal]);
-    }
+  const toggleArray = (item: string, state: string[], setter: any) => {
+    if (state.includes(item)) setter(state.filter(i => i !== item));
+    else setter([...state, item]);
   };
 
   const handleSubmit = async () => {
-    if (!bodyType || goals.length === 0 || !age || !weight || !experience) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!bodyType || goals.length === 0 || !age || !weight || experience === null || !activityLevel) {
+      Alert.alert('Missing Details', 'Please fill in the basic details so we can help you better.');
       return;
     }
 
@@ -36,7 +48,10 @@ export default function OnboardingScreen({ navigation }: any) {
         goals,
         age: parseInt(age, 10),
         weight: parseFloat(weight),
-        experience: parseInt(experience, 10)
+        experience,
+        activityLevel,
+        constraints,
+        focusAreas
       });
 
       if (response.data.success) {
@@ -46,18 +61,14 @@ export default function OnboardingScreen({ navigation }: any) {
           goals,
           age: parseInt(age, 10),
           weight: parseFloat(weight),
-          experience: parseInt(experience, 10)
+          experience,
+          activityLevel,
+          constraints,
+          focusAreas
         };
         await saveUserLocally(updatedUser, true);
         await syncDataWithServer();
-        Alert.alert('Success', 'Profile completed!', [
-          {
-            text: 'OK',
-            onPress: () => {
-              DeviceEventEmitter.emit('profileCompleted');
-            }
-          }
-        ]);
+        navigation.navigate('AIWorkoutChoice', { userDetails: updatedUser });
       }
     } catch (error: any) {
       Alert.alert('Error', 'Failed to save profile');
@@ -68,62 +79,106 @@ export default function OnboardingScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Complete Your Profile</Text>
+      <Text style={styles.title}>Tell Us About Yourself</Text>
+      <Text style={styles.subtitle}>Help us tailor the best experience for you.</Text>
 
-      <Text style={styles.sectionTitle}>Body Type</Text>
-      <View style={styles.cardsContainer}>
+      <Text style={styles.sectionTitle}>1. How would you describe your body?</Text>
+      <View style={styles.optionsContainer}>
         {BODY_TYPES.map((type) => (
           <TouchableOpacity
-            key={type}
-            style={[styles.card, bodyType === type && styles.cardSelected]}
-            onPress={() => setBodyType(type)}
+            key={type.value}
+            style={[styles.card, bodyType === type.value && styles.cardSelected]}
+            onPress={() => setBodyType(type.value)}
           >
-            <Text style={[styles.cardText, bodyType === type && styles.cardTextSelected]}>{type}</Text>
+            <Text style={[styles.cardText, bodyType === type.value && styles.textSelected]}>{type.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Goals (Select multiple)</Text>
+      <Text style={styles.sectionTitle}>2. What is your main goal? (Select multiple)</Text>
       <View style={styles.tagsContainer}>
         {GOALS.map((goal) => (
           <TouchableOpacity
             key={goal}
             style={[styles.tag, goals.includes(goal) && styles.tagSelected]}
-            onPress={() => toggleGoal(goal)}
+            onPress={() => toggleArray(goal, goals, setGoals)}
           >
-            <Text style={[styles.tagText, goals.includes(goal) && styles.tagTextSelected]}>{goal}</Text>
+            <Text style={[styles.tagText, goals.includes(goal) && styles.textSelected]}>{goal}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Details</Text>
+      <Text style={styles.sectionTitle}>3. What is your daily activity level?</Text>
+      <View style={styles.optionsContainer}>
+        {ACTIVITY_LEVELS.map((level) => (
+          <TouchableOpacity
+            key={level}
+            style={[styles.card, activityLevel === level && styles.cardSelected]}
+            onPress={() => setActivityLevel(level)}
+          >
+            <Text style={[styles.cardText, activityLevel === level && styles.textSelected]}>{level}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={styles.sectionTitle}>4. Experience Level</Text>
+      <View style={styles.optionsContainer}>
+        {EXPERIENCE_LEVELS.map((exp) => (
+          <TouchableOpacity
+            key={exp.label}
+            style={[styles.card, experience === exp.value && styles.cardSelected]}
+            onPress={() => setExperience(exp.value)}
+          >
+            <Text style={[styles.cardText, experience === exp.value && styles.textSelected]}>{exp.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={styles.sectionTitle}>5. Basic Stats</Text>
+      <View style={styles.statsRow}>
+        <TextInput
+          style={[styles.input, { flex: 1, marginRight: 10 }]}
+          placeholder="Age (e.g. 25)"
+          placeholderTextColor="#999"
+          keyboardType="numeric"
+          value={age}
+          onChangeText={setAge}
+        />
+        <TextInput
+          style={[styles.input, { flex: 1 }]}
+          placeholder="Weight (kg/lbs)"
+          placeholderTextColor="#999"
+          keyboardType="numeric"
+          value={weight}
+          onChangeText={setWeight}
+        />
+      </View>
+
+      <Text style={styles.sectionTitle}>6. Focus Areas (Optional)</Text>
+      <View style={styles.tagsContainer}>
+        {FOCUS_AREAS.map((area) => (
+          <TouchableOpacity
+            key={area}
+            style={[styles.tag, focusAreas.includes(area) && styles.tagSelected]}
+            onPress={() => toggleArray(area, focusAreas, setFocusAreas)}
+          >
+            <Text style={[styles.tagText, focusAreas.includes(area) && styles.textSelected]}>{area}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={styles.sectionTitle}>7. Medical Conditions / Constraints (Optional)</Text>
       <TextInput
-        style={styles.input}
-        placeholder="Exact Age"
+        style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+        placeholder="E.g. Bad lower back, knee pain, etc."
         placeholderTextColor="#999"
-        keyboardType="numeric"
-        value={age}
-        onChangeText={setAge}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Exact Weight (kg/lbs)"
-        placeholderTextColor="#999"
-        keyboardType="numeric"
-        value={weight}
-        onChangeText={setWeight}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Years of Experience"
-        placeholderTextColor="#999"
-        keyboardType="numeric"
-        value={experience}
-        onChangeText={setExperience}
+        multiline
+        value={constraints}
+        onChangeText={setConstraints}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.buttonText}>Finish Setup</Text>}
+        {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.buttonText}>Next Step ➔</Text>}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -136,35 +191,37 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+    paddingTop: 60,
     paddingBottom: 50,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 30,
     textAlign: 'center',
-    marginTop: 40,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 30,
+    marginTop: 5,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#bb86fc',
     marginTop: 20,
     marginBottom: 10,
   },
-  cardsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  optionsContainer: {
+    flexDirection: 'column',
   },
   card: {
     backgroundColor: '#1e1e1e',
     padding: 15,
     borderRadius: 8,
-    width: '48%',
     marginBottom: 10,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#333',
   },
@@ -175,9 +232,11 @@ const styles = StyleSheet.create({
   cardText: {
     color: '#ccc',
     fontWeight: '600',
+    textAlign: 'center',
   },
-  cardTextSelected: {
+  textSelected: {
     color: '#bb86fc',
+    fontWeight: 'bold',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -194,15 +253,15 @@ const styles = StyleSheet.create({
     borderColor: '#333',
   },
   tagSelected: {
-    backgroundColor: '#bb86fc',
     borderColor: '#bb86fc',
+    backgroundColor: 'rgba(187, 134, 252, 0.1)',
   },
   tagText: {
     color: '#ccc',
   },
-  tagTextSelected: {
-    color: '#000',
-    fontWeight: 'bold',
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   input: {
     backgroundColor: '#1e1e1e',
@@ -211,9 +270,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 15,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   button: {
-    backgroundColor: '#bb86fc',
+    backgroundColor: '#03DAC6',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',

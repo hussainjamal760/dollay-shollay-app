@@ -77,4 +77,59 @@ Example output: "Aim for 62.5kg for 8 reps, or do 60kg for 10 reps."`
   }
 });
 
+router.post('/generate-plan', async (req, res) => {
+  try {
+    const { daysPerWeek, userDetails } = req.body;
+    
+    const messages = [
+      {
+        role: "system",
+        content: `You are an expert AI personal trainer. Create a workout plan in strictly valid JSON format.
+The JSON must exactly match this structure:
+{
+  "name": "AI Generated Plan",
+  "days": [
+    {
+      "dayOfWeek": "Day 1",
+      "exercises": [
+        {
+          "muscle": "Chest",
+          "name": "Bench Press",
+          "sets": 3,
+          "reps": 10,
+          "weightLifted": 20
+        }
+      ]
+    }
+  ]
+}
+Generate exactly ${daysPerWeek} workout days in the "days" array.`
+      },
+      {
+        role: "user",
+        content: `Create a ${daysPerWeek}-day workout plan. My details: ${JSON.stringify(userDetails)}`
+      }
+    ];
+
+    const completion = await groq.chat.completions.create({
+      messages: messages,
+      model: "llama3-8b-8192",
+      temperature: 0.7,
+      max_tokens: 2000,
+      response_format: { type: "json_object" }
+    });
+
+    const plan = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    
+    res.json({
+      success: true,
+      plan
+    });
+
+  } catch (error) {
+    console.error('AI Generate Plan error:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate plan.' });
+  }
+});
+
 module.exports = router;
