@@ -8,6 +8,7 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import AIWorkoutChoiceScreen from '../screens/AIWorkoutChoiceScreen';
 import CreateWorkoutScreen from '../screens/CreateWorkoutScreen';
 import WorkoutSessionScreen from '../screens/WorkoutSessionScreen';
+import SplashScreenComponent from '../screens/SplashScreen';
 import type { RootStackParamList } from './types';
 import * as SecureStore from 'expo-secure-store';
 import { ActivityIndicator, View, DeviceEventEmitter } from 'react-native';
@@ -17,6 +18,7 @@ const Stack = createStackNavigator<any>();
 
 export default function RootNavigator() {
   const [isLoading, setIsLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [profileCompleted, setProfileCompleted] = useState<boolean>(false);
 
@@ -43,20 +45,21 @@ export default function RootNavigator() {
       setIsLoading(false);
     };
 
+    const splashTimer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+
     bootstrapAsync();
 
     return () => {
       listener.remove();
       logoutListener.remove();
+      clearTimeout(splashTimer);
     };
   }, []);
 
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' }}>
-        <ActivityIndicator size="large" color="#bb86fc" />
-      </View>
-    );
+  if (isLoading || showSplash) {
+    return <SplashScreenComponent />;
   }
 
   return (
