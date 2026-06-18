@@ -20,6 +20,27 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
   const [newLoads, setNewLoads] = useState<{ [exKey: string]: any }>({});
   const [aiSuggestions, setAiSuggestions] = useState<{ [exKey: string]: string }>({});
   const [loadingSuggestions, setLoadingSuggestions] = useState<{ [exKey: string]: boolean }>({});
+  
+  const [dayAnalysis, setDayAnalysis] = useState<{ [day: string]: string }>({});
+  const [loadingAnalysis, setLoadingAnalysis] = useState<{ [day: string]: boolean }>({});
+
+  const analyzeDay = async (dayObj: any) => {
+    const day = dayObj.dayOfWeek;
+    try {
+      setLoadingAnalysis(prev => ({ ...prev, [day]: true }));
+      const response = await api.post('/ai/analyze-day', {
+        dayOfWeek: day,
+        exercises: dayObj.exercises
+      });
+      if (response.data.success) {
+        setDayAnalysis(prev => ({ ...prev, [day]: response.data.analysis }));
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Failed to get analysis.');
+    } finally {
+      setLoadingAnalysis(prev => ({ ...prev, [day]: false }));
+    }
+  };
 
   const fetchSuggestion = async (key: string, exName: string, history: any[]) => {
     try {
@@ -250,6 +271,30 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
 
             {isExpanded && (
               <View style={styles.exercisesContainer}>
+                
+                {dayObj.exercises && dayObj.exercises.length > 0 && (
+                  <View style={styles.dayAnalysisBox}>
+                    {dayAnalysis[dayObj.dayOfWeek] ? (
+                      <View style={styles.analysisResultBox}>
+                        <Text style={styles.analysisResultTitle}>🧠 AI Day Analysis</Text>
+                        <Text style={styles.analysisResultText}>{dayAnalysis[dayObj.dayOfWeek]}</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity 
+                        style={styles.analyzeDayButton} 
+                        onPress={() => analyzeDay(dayObj)}
+                        disabled={loadingAnalysis[dayObj.dayOfWeek]}
+                      >
+                        {loadingAnalysis[dayObj.dayOfWeek] ? (
+                          <ActivityIndicator color="#000" />
+                        ) : (
+                          <Text style={styles.analyzeDayButtonText}>🧠 Analyze Day with AI</Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
                 {(!dayObj.exercises || dayObj.exercises.length === 0) ? (
                   <Text style={styles.restDayText}>No exercises scheduled. Take a break!</Text>
                 ) : (
@@ -671,5 +716,42 @@ const styles = StyleSheet.create({
     color: '#bb86fc',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  dayAnalysisBox: {
+    marginBottom: 20,
+  },
+  analyzeDayButton: {
+    backgroundColor: '#03DAC6',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    shadowColor: '#03DAC6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  analyzeDayButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  analysisResultBox: {
+    backgroundColor: 'rgba(3, 218, 198, 0.1)',
+    borderWidth: 1,
+    borderColor: '#03DAC6',
+    padding: 15,
+    borderRadius: 8,
+  },
+  analysisResultTitle: {
+    color: '#03DAC6',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  analysisResultText: {
+    color: '#ddd',
+    fontSize: 14,
+    lineHeight: 22,
   },
 });

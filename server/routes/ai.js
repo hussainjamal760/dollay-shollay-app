@@ -132,4 +132,40 @@ Generate exactly ${daysPerWeek} workout days in the "days" array.`
   }
 });
 
+router.post('/analyze-day', async (req, res) => {
+  try {
+    const { dayOfWeek, exercises } = req.body;
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are an expert master fitness coach. The user will provide a list of exercises they plan to do on a specific day.
+Your task:
+1. Rate the routine out of 10 for effectiveness (hypertrophy/strength).
+2. Provide 2-3 concise, actionable suggestions to improve it (e.g., exercise order, missing muscle groups, volume adjustments).
+Do not write a long essay. Keep it punchy and encouraging.`
+      },
+      {
+        role: "user",
+        content: `Day: ${dayOfWeek}\nExercises: ${JSON.stringify(exercises)}`
+      }
+    ];
+
+    const completion = await groq.chat.completions.create({
+      messages: messages,
+      model: "llama3-8b-8192",
+      temperature: 0.6,
+      max_tokens: 300,
+    });
+
+    res.json({
+      success: true,
+      analysis: completion.choices[0]?.message?.content || "Looks like a solid routine, keep pushing!"
+    });
+  } catch (error) {
+    console.error('AI Analyze Day error:', error);
+    res.status(500).json({ success: false, error: 'Failed to analyze day.' });
+  }
+});
+
 module.exports = router;
