@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { LineChart } from 'react-native-chart-kit';
 import { getWorkoutLogsForPlan, saveWorkoutLogLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
+import api from '../utils/api';
 
 const getTodayDayOfWeek = () => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -15,9 +16,24 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
   const [allDays, setAllDays] = useState<any[]>([]);
   const [expandedDays, setExpandedDays] = useState<{ [day: string]: boolean }>({});
   const [expandedHistory, setExpandedHistory] = useState<{ [exKey: string]: boolean }>({});
-  
   const [historyMap, setHistoryMap] = useState<{ [exKey: string]: any[] }>({});
   const [newLoads, setNewLoads] = useState<{ [exKey: string]: any }>({});
+  const [aiSuggestions, setAiSuggestions] = useState<{ [exKey: string]: string }>({});
+  const [loadingSuggestions, setLoadingSuggestions] = useState<{ [exKey: string]: boolean }>({});
+
+  const fetchSuggestion = async (key: string, exName: string, history: any[]) => {
+    try {
+      setLoadingSuggestions(prev => ({ ...prev, [key]: true }));
+      const response = await api.post('/ai/suggest-overload', { exerciseName: exName, history });
+      if (response.data.success) {
+        setAiSuggestions(prev => ({ ...prev, [key]: response.data.suggestion }));
+      }
+    } catch (e) {
+      setAiSuggestions(prev => ({ ...prev, [key]: 'Error getting suggestion' }));
+    } finally {
+      setLoadingSuggestions(prev => ({ ...prev, [key]: false }));
+    }
+  };
 
   const todayLabel = getTodayDayOfWeek();
 
@@ -48,10 +64,8 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
         const histKey = ex.name;
         if (!hMap[histKey]) hMap[histKey] = [];
         
-        // Ensure setsData exists
         let setsData = ex.setsData;
         if (!setsData || setsData.length === 0) {
-          // Backward compatibility for old logs
           setsData = [];
           const numSets = parseInt(ex.sets) || 1;
           for(let i=0; i<numSets; i++) {
@@ -69,7 +83,6 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
 
     setHistoryMap(hMap);
 
-    // Initialize newLoads based on history or plan defaults
     const initNewLoads: any = {};
     parsedDays.forEach((d: any) => {
       d.exercises.forEach((ex: any) => {
@@ -80,16 +93,13 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
         let numSets = 0;
 
         if (hMap[histKey] && hMap[histKey].length > 0) {
-          // Use last saved load
           const lastLoad = hMap[histKey][0];
           initialSetsData = JSON.parse(JSON.stringify(lastLoad.setsData));
           numSets = initialSetsData.length;
         } else if (ex.setsData && ex.setsData.length > 0) {
-          // Use detailed plan defaults
           initialSetsData = JSON.parse(JSON.stringify(ex.setsData));
           numSets = initialSetsData.length;
         } else {
-          // Use old simple plan defaults
           numSets = parseInt(ex.sets) || 1;
           for(let i=0; i<numSets; i++) {
             initialSetsData.push({ weightLifted: ex.weightLifted?.toString() || '0', reps: ex.reps?.toString() || '0' });
@@ -123,13 +133,11 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
       let newSetsData = [...current.setsData];
       
       if (count > newSetsData.length) {
-        // Add sets, duplicating the last set's weight/reps if available
         const lastSet = newSetsData[newSetsData.length - 1] || { weightLifted: '0', reps: '0' };
         for (let i = newSetsData.length; i < count; i++) {
           newSetsData.push({ ...lastSet });
         }
       } else if (count < newSetsData.length) {
-        // Remove sets
         newSetsData = newSetsData.slice(0, count);
       }
 
@@ -179,7 +187,6 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
           muscle: ex.muscle,
           name: ex.name,
           setsData: parsedSetsData,
-          // For backward compat on server if needed
           weightLifted: parsedSetsData.length > 0 ? parsedSetsData[0].weightLifted : 0,
           sets: parsedSetsData.length,
           reps: parsedSetsData.length > 0 ? parsedSetsData[0].reps : 0,
@@ -264,7 +271,6 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                           <Text style={styles.muscleLabel}>{ex.muscle}</Text>
                         </View>
                         
-                        {/* Current/Last Saved Load */}
                         {lastLoad && (
                           <View style={styles.lastLoadContainer}>
                             <Text style={styles.lastLoadTitle}>Last Saved Load</Text>
@@ -276,7 +282,16 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                           </View>
                         )}
 
-                        {/* History Dropdown & Charts */}
+                        <View style={styles.aiSuggestionBox}>
+                          {aiSuggestions[key] ? (
+                            <Text style={styles.aiSuggestionText}>✨ AI: {aiSuggestions[key]}</Text>
+                          ) : (
+                            <TouchableOpacity onPress={() => fetchSuggestion(key, ex.name, history)} disabled={loadingSuggestions[key]}>
+                              {loadingSuggestions[key] ? <ActivityIndicator size="small" color="#bb86fc" /> : <Text style={styles.aiButtonText}>✨ Get AI Overload Suggestion</Text>}
+                            </TouchableOpacity>
+                          )}
+                        </View>
+
                         {history.length > 1 && (
                           <View style={styles.historySection}>
                             <TouchableOpacity onPress={() => toggleHistory(key)}>
@@ -287,7 +302,6 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                             {histExpanded && (
                               <View style={styles.historyList}>
                                 {(() => {
-                                  // Prepare chronologically sorted data for chart
                                   const chartData = [...history].reverse();
                                   
                                   const labels = chartData.map(h => {
@@ -295,7 +309,6 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                                     return `${d.getMonth()+1}/${d.getDate()}`;
                                   });
                                   
-                                  // Max weight and Total Reps logic
                                   const weights = chartData.map(h => Math.max(...h.setsData.map((s:any) => s.weightLifted)) || 0);
                                   const repsData = chartData.map(h => h.setsData.reduce((sum:number, s:any) => sum + s.reps, 0) || 0);
 
@@ -351,7 +364,6 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                           </View>
                         )}
 
-                        {/* Add New Load (Set by Set) */}
                         <View style={styles.newLoadSection}>
                           <Text style={styles.newLoadTitle}>Add New Load</Text>
                           
@@ -638,6 +650,26 @@ const styles = StyleSheet.create({
   saveExButtonText: {
     color: '#000',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  aiSuggestionBox: {
+    backgroundColor: 'rgba(187, 134, 252, 0.1)',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#bb86fc',
+    alignItems: 'center',
+  },
+  aiSuggestionText: {
+    color: '#bb86fc',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  aiButtonText: {
+    color: '#bb86fc',
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

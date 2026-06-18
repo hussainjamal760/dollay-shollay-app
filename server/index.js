@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const workoutRoutes = require('./routes/workouts');
 const logsRoutes = require('./routes/logs');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,23 +19,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Fitcore server is running!' });
-});
-
-app.post('/api/ai/coach', async (req, res) => {
-  try {
-    const { prompt } = req.body;
-    res.json({ 
-      success: true, 
-      message: "This is a mock response from the AI coach.",
-      reply: `You said: ${prompt}`
-    });
-  } catch (error) {
-    console.error('AI Coach error:', error);
-    res.status(500).json({ success: false, error: 'Failed to communicate with AI coach.' });
-  }
 });
 
 app.listen(PORT, () => {
