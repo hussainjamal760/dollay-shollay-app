@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import TodayScreen from '../screens/TodayScreen';
-import ScheduleScreen from '../screens/ScheduleScreen';
+import ProgressScreen from '../screens/ProgressScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import AICoachScreen from '../screens/AICoachScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -18,8 +18,8 @@ export default function BottomTabNavigator() {
 
           if (route.name === 'Today') {
             iconName = focused ? 'barbell' : 'barbell-outline';
-          } else if (route.name === 'Schedule') {
-            iconName = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'Progress') {
+            iconName = focused ? 'trophy' : 'trophy-outline';
           } else if (route.name === 'Library') {
             iconName = focused ? 'search' : 'search-outline';
           } else if (route.name === 'AICoach') {
@@ -45,7 +45,7 @@ export default function BottomTabNavigator() {
       })}
     >
       <Tab.Screen name="Today" component={TodayScreen} />
-      <Tab.Screen name="Schedule" component={ScheduleScreen} />
+      <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="Library" component={LibraryScreen} />
       <Tab.Screen name="AICoach" component={AICoachScreen} options={{ title: 'AI Coach' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
