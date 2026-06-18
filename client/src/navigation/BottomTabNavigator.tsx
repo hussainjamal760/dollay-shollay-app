@@ -4,6 +4,7 @@ import TodayScreen from '../screens/TodayScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import AICoachScreen from '../screens/AICoachScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import type { BottomTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -23,6 +24,8 @@ export default function BottomTabNavigator() {
             iconName = focused ? 'search' : 'search-outline';
           } else if (route.name === 'AICoach') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+          } else if (route.name === 'Settings') {
+            iconName = focused ? 'settings' : 'settings-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -45,6 +48,7 @@ export default function BottomTabNavigator() {
       <Tab.Screen name="Schedule" component={ScheduleScreen} />
       <Tab.Screen name="Library" component={LibraryScreen} />
       <Tab.Screen name="AICoach" component={AICoachScreen} options={{ title: 'AI Coach' }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 }

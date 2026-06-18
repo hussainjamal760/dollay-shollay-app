@@ -23,6 +23,10 @@ export default function RootNavigator() {
     const listener = DeviceEventEmitter.addListener('profileCompleted', () => {
       setProfileCompleted(true);
     });
+    const logoutListener = DeviceEventEmitter.addListener('logout', () => {
+      setUserToken(null);
+      setProfileCompleted(false);
+    });
 
     const bootstrapAsync = async () => {
       let token;
@@ -42,6 +46,7 @@ export default function RootNavigator() {
 
     return () => {
       listener.remove();
+      logoutListener.remove();
     };
   }, []);
 

@@ -117,4 +117,44 @@ router.post('/profile', auth, async (req, res) => {
   }
 });
 
+router.put('/updateProfile', auth, async (req, res) => {
+  try {
+    const { firstName, lastName } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { firstName, lastName },
+      { new: true }
+    );
+    
+    res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profileCompleted: user.profileCompleted } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error updating profile' });
+  }
+});
+
+router.put('/updatePassword', auth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Incorrect current password' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    await user.save();
+    
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error updating password' });
+  }
+});
+
 module.exports = router;
