@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import api from '../utils/api';
-import { saveUserLocally } from '../database/db';
-import { syncDataWithServer } from '../utils/sync';
 
 export default function RegisterScreen({ navigation }: any) {
   const [firstName, setFirstName] = useState('');
@@ -15,12 +14,12 @@ export default function RegisterScreen({ navigation }: any) {
 
   const handleRegister = async () => {
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Hold on', 'Please fill in all fields');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert('Hold on', 'Passwords do not match');
       return;
     }
 
@@ -34,7 +33,7 @@ export default function RegisterScreen({ navigation }: any) {
       });
 
       if (response.data.success) {
-        Alert.alert('Success', 'Account created!', [
+        Alert.alert('Success', 'Account created! Please log in.', [
           { text: 'OK', onPress: () => navigation.navigate('Login', { email, password }) }
         ]);
       }
@@ -47,117 +46,216 @@ export default function RegisterScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.warningContainer}>
-        <Text style={styles.warningText}>Email OTP is disabled because its testing mode</Text>
-      </View>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        
+        <View style={styles.warningContainer}>
+          <Text style={styles.warningText}>Email OTP is currently disabled (Testing Mode)</Text>
+        </View>
 
-      <Text style={styles.title}>Create Account</Text>
+        <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.headerContainer}>
+          <View style={styles.iconPlaceholder}>
+            <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.iconGradient} start={{x:0, y:0}} end={{x:1, y:1}}>
+              <Text style={styles.iconText}>🚀</Text>
+            </LinearGradient>
+          </View>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Start your fitness journey today</Text>
+        </Animated.View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="First Name"
-        placeholderTextColor="#999"
-        value={firstName}
-        onChangeText={setFirstName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name"
-        placeholderTextColor="#999"
-        value={lastName}
-        onChangeText={setLastName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#999"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#999"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm Password"
-        placeholderTextColor="#999"
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
+        <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.formContainer}>
+          
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: 12 }]}>
+              <Text style={styles.label}>First Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="John"
+                placeholderTextColor="#52525B"
+                value={firstName}
+                onChangeText={setFirstName}
+              />
+            </View>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>Last Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Doe"
+                placeholderTextColor="#52525B"
+                value={lastName}
+                onChangeText={setLastName}
+              />
+            </View>
+          </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign Up</Text>}
-      </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="name@example.com"
+              placeholderTextColor="#52525B"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
 
-      <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.linkText}>Already have an account? Log in</Text>
-      </TouchableOpacity>
-    </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor="#52525B"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor="#52525B"
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+          </View>
+
+          <TouchableOpacity style={styles.buttonWrapper} onPress={handleRegister} disabled={loading}>
+            <LinearGradient colors={['#6366F1', '#8B5CF6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.button}>
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign Up</Text>}
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.linkText}>Already have an account? <Text style={styles.linkHighlight}>Log in</Text></Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#121212',
+    backgroundColor: '#09090B', // Zinc 950
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
+    padding: 24,
   },
   warningContainer: {
-    backgroundColor: '#332b00',
-    padding: 10,
+    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#ffcc00'
+    borderColor: 'rgba(234, 179, 8, 0.5)',
+    marginTop: 40,
   },
   warningText: {
-    color: '#ffcc00',
+    color: '#EAB308',
     textAlign: 'center',
     fontSize: 12,
+    fontWeight: '600',
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  iconPlaceholder: {
+    marginBottom: 24,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  iconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconText: {
+    fontSize: 40,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 30,
-    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#FAFAFA',
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#A1A1AA',
+  },
+  formContainer: {
+    width: '100%',
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    color: '#A1A1AA',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginLeft: 4,
   },
   input: {
-    backgroundColor: '#1e1e1e',
-    color: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    backgroundColor: '#18181B', // Zinc 900
+    color: '#FAFAFA',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#27272A',
+  },
+  buttonWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 12,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
   },
   button: {
-    backgroundColor: '#bb86fc',
-    padding: 15,
-    borderRadius: 8,
+    paddingVertical: 18,
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'center',
   },
   buttonText: {
-    color: '#000',
+    color: '#FFF',
+    fontWeight: '800',
     fontSize: 16,
-    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   linkButton: {
-    marginTop: 20,
+    marginTop: 24,
     alignItems: 'center',
   },
   linkText: {
-    color: '#bb86fc',
+    color: '#A1A1AA',
     fontSize: 14,
+  },
+  linkHighlight: {
+    color: '#8B5CF6',
+    fontWeight: 'bold',
   },
 });
