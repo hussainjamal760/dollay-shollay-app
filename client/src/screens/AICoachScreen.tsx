@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import api from '../utils/api';
 
 export default function AICoachScreen() {
@@ -42,8 +45,8 @@ export default function AICoachScreen() {
     datasets: [
       {
         data: [20, 45, 28, 80, 99, 43, 50],
-        color: (opacity = 1) => `rgba(187, 134, 252, ${opacity})`,
-        strokeWidth: 2
+        color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`, // Indigo
+        strokeWidth: 3
       }
     ],
     legend: ["Weekly Consistency Score"]
@@ -51,57 +54,71 @@ export default function AICoachScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dollay-Shollay AI Coach</Text>
-        <Text style={styles.headerSubtitle}>Powered by Groq</Text>
-      </View>
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+        <View style={styles.headerTitleRow}>
+          <Ionicons name="chatbubbles" size={24} color="#8B5CF6" />
+          <Text style={styles.headerTitle}>AI Coach</Text>
+        </View>
+        <Text style={styles.headerSubtitle}>Powered by Dollay-Shollay AI</Text>
+      </Animated.View>
 
-      <View style={styles.chartContainer}>
+      <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.chartContainer}>
         <LineChart
           data={chartData}
-          width={Dimensions.get('window').width - 40}
-          height={160}
+          width={Dimensions.get('window').width - 48}
+          height={180}
           chartConfig={{
-            backgroundColor: '#1a1a1a',
-            backgroundGradientFrom: '#1a1a1a',
-            backgroundGradientTo: '#1a1a1a',
+            backgroundColor: '#18181B',
+            backgroundGradientFrom: '#18181B',
+            backgroundGradientTo: '#18181B',
             decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(150, 150, 150, ${opacity})`,
-            style: { borderRadius: 8 },
-            propsForDots: { r: '4', strokeWidth: '1', stroke: '#fff' }
+            color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(161, 161, 170, ${opacity})`,
+            style: { borderRadius: 16 },
+            propsForDots: { r: '4', strokeWidth: '2', stroke: '#8B5CF6' }
           }}
           bezier
-          style={{ borderRadius: 8 }}
+          style={{ borderRadius: 16 }}
         />
-      </View>
+      </Animated.View>
 
       <ScrollView 
         ref={scrollViewRef}
         style={styles.chatArea}
-        contentContainerStyle={{ padding: 15 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 10 }}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        showsVerticalScrollIndicator={false}
       >
         {messages.map((msg, index) => {
           if (msg.role === 'system' && index === 0) {
             return (
-              <View key={index} style={[styles.messageBubble, styles.assistantBubble]}>
+              <Animated.View entering={FadeIn.delay(200)} key={index} style={[styles.messageBubble, styles.assistantBubble]}>
+                <Ionicons name="sparkles" size={16} color="#8B5CF6" style={{marginBottom: 6}} />
                 <Text style={styles.messageText}>{msg.content}</Text>
-              </View>
+              </Animated.View>
             );
           }
           if (msg.role === 'system') return null;
 
           const isUser = msg.role === 'user';
           return (
-            <View key={index} style={[styles.messageBubble, isUser ? styles.userBubble : styles.assistantBubble]}>
-              <Text style={styles.messageText}>{msg.content}</Text>
-            </View>
+            <Animated.View entering={FadeIn} key={index} style={[styles.messageBubble, isUser ? styles.userBubble : styles.assistantBubble]}>
+              {isUser ? (
+                <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.userBubbleGradient}>
+                  <Text style={styles.userMessageText}>{msg.content}</Text>
+                </LinearGradient>
+              ) : (
+                <View>
+                  <Ionicons name="sparkles" size={16} color="#8B5CF6" style={{marginBottom: 6}} />
+                  <Text style={styles.messageText}>{msg.content}</Text>
+                </View>
+              )}
+            </Animated.View>
           );
         })}
         {loading && (
           <View style={[styles.messageBubble, styles.assistantBubble]}>
-            <ActivityIndicator color="#bb86fc" />
+            <ActivityIndicator color="#8B5CF6" />
           </View>
         )}
       </ScrollView>
@@ -110,13 +127,15 @@ export default function AICoachScreen() {
         <TextInput
           style={styles.input}
           placeholder="Ask for workout advice..."
-          placeholderTextColor="#888"
+          placeholderTextColor="#71717A"
           value={inputText}
           onChangeText={setInputText}
           onSubmitEditing={sendMessage}
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage} disabled={loading}>
-          <Text style={styles.sendButtonText}>Send</Text>
+        <TouchableOpacity style={styles.sendButton} onPress={sendMessage} disabled={loading || !inputText.trim()}>
+          <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.sendButtonGradient}>
+            <Ionicons name="send" size={18} color="#FFF" style={{ marginLeft: 2 }} />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
@@ -126,81 +145,100 @@ export default function AICoachScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#09090B', // Zinc 950
   },
   header: {
-    padding: 20,
-    paddingTop: 40,
-    backgroundColor: '#1e1e1e',
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    padding: 24,
+    paddingTop: 60,
+    backgroundColor: '#09090B',
     alignItems: 'center',
   },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#03DAC6',
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FAFAFA',
+    marginLeft: 10,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 5,
+    fontSize: 14,
+    color: '#A1A1AA',
+    fontWeight: '500',
   },
   chartContainer: {
-    padding: 20,
-    backgroundColor: '#1a1a1a',
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    alignItems: 'center',
   },
   chatArea: {
     flex: 1,
   },
   messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
+    maxWidth: '85%',
+    marginBottom: 16,
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: '#03DAC6',
-    borderBottomRightRadius: 0,
+    borderRadius: 20,
+    borderBottomRightRadius: 4,
+    overflow: 'hidden',
+  },
+  userBubbleGradient: {
+    padding: 16,
   },
   assistantBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#2a2a2a',
-    borderBottomLeftRadius: 0,
+    backgroundColor: '#18181B',
+    borderRadius: 20,
+    borderBottomLeftRadius: 4,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#27272A',
   },
   messageText: {
-    color: '#fff',
+    color: '#E4E4E7',
     fontSize: 15,
+    lineHeight: 22,
+  },
+  userMessageText: {
+    color: '#FFF',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '500',
   },
   inputArea: {
     flexDirection: 'row',
-    padding: 10,
-    paddingBottom: 20,
-    backgroundColor: '#1e1e1e',
+    padding: 16,
+    paddingBottom: 32,
+    backgroundColor: '#18181B',
     borderTopWidth: 1,
-    borderTopColor: '#333',
+    borderTopColor: '#27272A',
+    alignItems: 'center',
   },
   input: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
-    color: '#fff',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    backgroundColor: '#27272A',
+    color: '#FAFAFA',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     fontSize: 16,
   },
   sendButton: {
-    marginLeft: 10,
-    backgroundColor: '#bb86fc',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
+    marginLeft: 12,
+    borderRadius: 24,
+    overflow: 'hidden',
   },
-  sendButtonText: {
-    color: '#000',
-    fontWeight: 'bold',
+  sendButtonGradient: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

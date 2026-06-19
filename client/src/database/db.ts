@@ -58,7 +58,8 @@ export const initDB = async () => {
       'experience INTEGER',
       'activity_level TEXT',
       'constraints TEXT',
-      'focus_areas TEXT'
+      'focus_areas TEXT',
+      'custom_macros TEXT'
     ];
 
     for (const col of columnsToAdd) {
@@ -80,10 +81,11 @@ export const saveUserLocally = async (user: any, synced = false) => {
     const profileCompleted = user.profileCompleted ? 1 : 0;
     const goalsStr = user.goals ? JSON.stringify(user.goals) : null;
     const focusAreasStr = user.focusAreas ? JSON.stringify(user.focusAreas) : null;
+    const customMacrosStr = user.customMacros ? JSON.stringify(user.customMacros) : null;
     
     await db!.runAsync(
-      `INSERT OR REPLACE INTO users (server_id, first_name, last_name, email, sync_status, profile_completed, body_type, age, weight, goals, experience, activity_level, constraints, focus_areas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user.id, user.firstName, user.lastName, user.email, syncStatus, profileCompleted, user.bodyType || null, user.age || null, user.weight || null, goalsStr, user.experience || null, user.activityLevel || null, user.constraints || null, focusAreasStr]
+      `INSERT OR REPLACE INTO users (server_id, first_name, last_name, email, sync_status, profile_completed, body_type, age, weight, goals, experience, activity_level, constraints, focus_areas, custom_macros) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user.id, user.firstName, user.lastName, user.email, syncStatus, profileCompleted, user.bodyType || null, user.age || null, user.weight || null, goalsStr, user.experience || null, user.activityLevel || null, user.constraints || null, focusAreasStr, customMacrosStr]
     );
   } catch (error) {
   }
@@ -92,8 +94,18 @@ export const saveUserLocally = async (user: any, synced = false) => {
 export const getUserLocally = async () => {
   if (!db) await initDB();
   try {
-    const row = await db!.getFirstAsync(`SELECT * FROM users LIMIT 1`);
-    return row;
+    const row: any = await db!.getFirstAsync(`SELECT * FROM users LIMIT 1`);
+    if (row) {
+      if (row.custom_macros) {
+        try {
+          row.customMacros = JSON.parse(row.custom_macros);
+        } catch (e) {
+          row.customMacros = null;
+        }
+      }
+      return row;
+    }
+    return null;
   } catch (error) {
     return null;
   }

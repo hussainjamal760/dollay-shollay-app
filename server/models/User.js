@@ -50,6 +50,12 @@ const userSchema = new mongoose.Schema({
   focusAreas: {
     type: [String]
   },
+  customMacros: {
+    calories: Number,
+    protein: Number,
+    carbs: Number,
+    fat: Number
+  },
   createdAt: {
     type: Date,
     default: Date.now

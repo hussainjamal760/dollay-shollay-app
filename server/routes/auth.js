@@ -86,13 +86,13 @@ const auth = require('../middleware/auth');
 
 router.post('/sync', auth, async (req, res) => {
   try {
-    const { id, firstName, lastName, email, profileCompleted, bodyType, age, weight, goals, experience, activityLevel, constraints, focusAreas } = req.body;
+    const { id, firstName, lastName, email, profileCompleted, bodyType, age, weight, goals, experience, activityLevel, constraints, focusAreas, customMacros } = req.body;
     
     if (req.user.id !== id) {
        return res.status(401).json({ success: false, message: 'Unauthorized sync attempt' });
     }
     
-    await User.findByIdAndUpdate(id, { firstName, lastName, email, profileCompleted, bodyType, age, weight, goals, experience, activityLevel, constraints, focusAreas });
+    await User.findByIdAndUpdate(id, { firstName, lastName, email, profileCompleted, bodyType, age, weight, goals, experience, activityLevel, constraints, focusAreas, customMacros });
     res.json({ success: true, message: 'Synced successfully' });
   } catch (err) {
     console.error(err.message);
@@ -154,6 +154,22 @@ router.put('/updatePassword', auth, async (req, res) => {
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error updating password' });
+  }
+});
+
+router.put('/updateMacros', auth, async (req, res) => {
+  try {
+    const { customMacros } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { customMacros },
+      { new: true }
+    );
+    
+    res.json({ success: true, customMacros: user.customMacros });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error updating custom macros' });
   }
 });
 

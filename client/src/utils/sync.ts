@@ -21,7 +21,8 @@ export const syncDataWithServer = async () => {
             age: user.age,
             weight: user.weight,
             goals: user.goals ? JSON.parse(user.goals) : undefined,
-            experience: user.experience
+            experience: user.experience,
+            customMacros: user.custom_macros ? JSON.parse(user.custom_macros) : undefined
           });
           await markUserAsSynced(user.server_id);
         } catch (err) {
