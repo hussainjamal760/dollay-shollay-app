@@ -1,7 +1,8 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.18:3000/api';
+// Hardcoding the production URL to ensure the APK NEVER falls back to localhost
+const API_URL = 'https://dollay-shollay-app.vercel.app/api';
 
 const api = axios.create({
   baseURL: API_URL,
