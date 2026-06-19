@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import * as SecureStore from 'expo-secure-store';
 import api from '../utils/api';
 import { saveUserLocally } from '../database/db';
-import { syncDataWithServer } from '../utils/sync';
+import { syncDataWithServer, downloadDataFromServer } from '../utils/sync';
 
 export default function LoginScreen({ route, navigation }: any) {
   const [email, setEmail] = useState(route?.params?.email || '');
@@ -32,9 +32,10 @@ export default function LoginScreen({ route, navigation }: any) {
         await SecureStore.setItemAsync('userToken', response.data.token);
         await saveUserLocally(response.data.user, true);
         await syncDataWithServer();
+        await downloadDataFromServer();
         DeviceEventEmitter.emit('login', {
           token: response.data.token,
-          profileCompleted: response.data.user?.profile_completed === 1
+          profileCompleted: !!response.data.user?.profileCompleted
         });
       }
     } catch (error: any) {

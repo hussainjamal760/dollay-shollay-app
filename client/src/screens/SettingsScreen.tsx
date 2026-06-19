@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import api from '../utils/api';
-import { getUserLocally, saveUserLocally } from '../database/db';
+import { getUserLocally, saveUserLocally, clearAllDataLocally } from '../database/db';
+import NetInfo from '@react-native-community/netinfo';
+import { syncDataWithServer } from '../utils/sync';
 
 export default function SettingsScreen() {
   const [firstName, setFirstName] = useState('');
@@ -86,7 +88,17 @@ export default function SettingsScreen() {
         text: 'Log Out',
         style: 'destructive',
         onPress: async () => {
+          const netInfo = await NetInfo.fetch();
+          if (!netInfo.isConnected) {
+            Alert.alert('Offline', 'You must be connected to the internet to log out so your data can be synced.');
+            return;
+          }
+
+          // Sync data to server before wiping local DB
+          await syncDataWithServer();
+
           await SecureStore.deleteItemAsync('userToken');
+          await clearAllDataLocally();
           DeviceEventEmitter.emit('logout');
         }
       }

@@ -286,3 +286,34 @@ export const deleteDietLogLocally = async (id: number) => {
   } catch (error) {
   }
 };
+
+export const getUnsyncedDietLogs = async () => {
+  if (!db) await initDB();
+  try {
+    const rows = await db!.getAllAsync(`SELECT * FROM diet_logs WHERE sync_status = 0`);
+    return rows;
+  } catch (error) {
+    return [];
+  }
+};
+
+export const markDietLogAsSynced = async (id: number, serverId: string) => {
+  if (!db) await initDB();
+  try {
+    await db!.runAsync(`UPDATE diet_logs SET sync_status = 1, server_id = ? WHERE id = ?`, [serverId, id]);
+  } catch (error) {
+  }
+};
+
+export const clearAllDataLocally = async () => {
+  if (!db) await initDB();
+  try {
+    await db!.execAsync(`
+      DELETE FROM users;
+      DELETE FROM workout_plans;
+      DELETE FROM workout_logs;
+      DELETE FROM diet_logs;
+    `);
+  } catch (error) {
+  }
+};
