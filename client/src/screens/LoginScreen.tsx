@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import api from '../utils/api';
 import { saveUserLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
 
-export default function LoginScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function LoginScreen({ route, navigation }: any) {
+  const [email, setEmail] = useState(route?.params?.email || '');
+  const [password, setPassword] = useState(route?.params?.password || '');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (route?.params?.email) setEmail(route.params.email);
+    if (route?.params?.password) setPassword(route.params.password);
+  }, [route?.params]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -27,7 +32,10 @@ export default function LoginScreen({ navigation }: any) {
         await SecureStore.setItemAsync('userToken', response.data.token);
         await saveUserLocally(response.data.user, true);
         await syncDataWithServer();
-        Alert.alert('Success', 'Logged in successfully! Please restart the app.');
+        DeviceEventEmitter.emit('login', {
+          token: response.data.token,
+          profileCompleted: response.data.user?.profile_completed === 1
+        });
       }
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed';

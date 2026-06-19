@@ -34,10 +34,9 @@ export default function RegisterScreen({ navigation }: any) {
       });
 
       if (response.data.success) {
-        await SecureStore.setItemAsync('userToken', response.data.token);
-        await saveUserLocally(response.data.user, true);
-        await syncDataWithServer();
-        Alert.alert('Success', 'Account created! Please restart the app to log in.');
+        Alert.alert('Success', 'Account created!', [
+          { text: 'OK', onPress: () => navigation.navigate('Login', { email, password }) }
+        ]);
       }
     } catch (error: any) {
       const message = error.response?.data?.message || 'Registration failed';

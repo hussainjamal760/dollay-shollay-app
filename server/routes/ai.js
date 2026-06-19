@@ -25,7 +25,7 @@ router.post('/chat', async (req, res) => {
 
     const completion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       temperature: 0.7,
       max_tokens: 500,
     });
@@ -59,7 +59,7 @@ Example output: "Aim for 62.5kg for 8 reps, or do 60kg for 10 reps."`
 
     const completion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       temperature: 0.5,
       max_tokens: 150,
     });
@@ -113,7 +113,7 @@ Generate exactly ${daysPerWeek} workout days in the "days" array.`
 
     const completion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       temperature: 0.7,
       max_tokens: 2000,
       response_format: { type: "json_object" }
@@ -153,7 +153,7 @@ Do not write a long essay. Keep it punchy and encouraging.`
 
     const completion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       temperature: 0.6,
       max_tokens: 300,
     });
@@ -194,7 +194,7 @@ Use reasonable estimates. Only return valid JSON, no other text.`
 
     const completion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       temperature: 0.3,
       max_tokens: 150,
       response_format: { type: "json_object" }
