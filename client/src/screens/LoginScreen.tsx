@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, DeviceEventEmitter, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import api from '../utils/api';
 import { saveUserLocally } from '../database/db';
@@ -52,7 +53,7 @@ export default function LoginScreen({ route, navigation }: any) {
         <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.headerContainer}>
           <View style={styles.iconPlaceholder}>
             <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.iconGradient} start={{x:0, y:0}} end={{x:1, y:1}}>
-              <Text style={styles.iconText}>💪</Text>
+              <Ionicons name="barbell" size={40} color="#FFF" />
             </LinearGradient>
           </View>
           <Text style={styles.title}>Welcome Back</Text>

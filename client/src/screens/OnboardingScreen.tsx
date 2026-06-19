@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
 import { saveUserLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
@@ -9,16 +10,16 @@ import { syncDataWithServer } from '../utils/sync';
 const { width } = Dimensions.get('window');
 
 const BODY_TYPES = [
-  { label: 'Slim / Hard to gain weight', value: 'Ectomorph', icon: '🏃‍♂️' },
-  { label: 'Athletic / Normal', value: 'Mesomorph', icon: '🤸‍♂️' },
-  { label: 'Heavy / Easy to gain weight', value: 'Endomorph', icon: '🏋️‍♂️' }
+  { label: 'Slim / Hard to gain weight', value: 'Ectomorph', icon: 'walk-outline' },
+  { label: 'Athletic / Normal', value: 'Mesomorph', icon: 'fitness-outline' },
+  { label: 'Heavy / Easy to gain weight', value: 'Endomorph', icon: 'barbell-outline' }
 ];
 
 const GOALS = ['Build Muscle', 'Lose Fat', 'Get Stronger', 'General Health'];
 const ACTIVITY_LEVELS = [
-  { label: 'Sitting all day', icon: '🪑' },
-  { label: 'Active job/lifestyle', icon: '🚶‍♂️' },
-  { label: 'Very Active/Athlete', icon: '🏃‍♂️💨' }
+  { label: 'Sitting all day', icon: 'laptop-outline' },
+  { label: 'Active job/lifestyle', icon: 'walk-outline' },
+  { label: 'Very Active/Athlete', icon: 'flash-outline' }
 ];
 const EXPERIENCE_LEVELS = [
   { label: 'Just Starting', value: 0 },
@@ -132,7 +133,7 @@ export default function OnboardingScreen({ navigation }: any) {
                   onPress={() => setBodyType(type.value)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.cardIcon}>{type.icon}</Text>
+                  <Ionicons name={type.icon as any} size={28} color={isSelected ? "#8B5CF6" : "#FAFAFA"} style={styles.cardIcon} />
                   <Text style={[styles.cardText, isSelected && styles.textSelected]}>{type.label}</Text>
                 </TouchableOpacity>
               );
@@ -169,7 +170,7 @@ export default function OnboardingScreen({ navigation }: any) {
                   onPress={() => setActivityLevel(level.label)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.cardIcon}>{level.icon}</Text>
+                  <Ionicons name={level.icon as any} size={28} color={isSelected ? "#8B5CF6" : "#FAFAFA"} style={styles.cardIcon} />
                   <Text style={[styles.cardText, isSelected && styles.textSelected]}>{level.label}</Text>
                 </TouchableOpacity>
               );
@@ -266,7 +267,8 @@ export default function OnboardingScreen({ navigation }: any) {
       <View style={styles.header}>
         {stepIndex > 0 && (
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Ionicons name="chevron-back" size={24} color="#A1A1AA" />
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         )}
         <Text style={styles.stepIndicator}>STEP {stepIndex + 1} OF {STEPS.length}</Text>
@@ -293,7 +295,16 @@ export default function OnboardingScreen({ navigation }: any) {
             end={{ x: 1, y: 1 }}
             style={styles.nextButton}
           >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.nextButtonText}>{stepIndex === STEPS.length - 1 ? "Let's Go 🚀" : "Continue"}</Text>}
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.nextButtonText}>
+                  {stepIndex === STEPS.length - 1 ? "Let's Go " : "Continue"}
+                </Text>
+                {stepIndex === STEPS.length - 1 && <Ionicons name="rocket" size={20} color="#FFF" style={{ marginLeft: 8 }} />}
+              </View>
+            )}
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -327,11 +338,14 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
     marginLeft: -8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButtonText: {
     color: '#A1A1AA',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 4,
   },
   stepIndicator: {
     color: '#6366F1',
@@ -384,7 +398,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
   },
   cardIcon: {
-    fontSize: 28,
     marginRight: 16,
   },
   cardText: {

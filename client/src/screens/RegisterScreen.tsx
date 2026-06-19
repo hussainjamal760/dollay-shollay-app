@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import api from '../utils/api';
 
@@ -56,7 +57,7 @@ export default function RegisterScreen({ navigation }: any) {
         <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.headerContainer}>
           <View style={styles.iconPlaceholder}>
             <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.iconGradient} start={{x:0, y:0}} end={{x:1, y:1}}>
-              <Text style={styles.iconText}>🚀</Text>
+              <Ionicons name="rocket" size={40} color="#FFF" />
             </LinearGradient>
           </View>
           <Text style={styles.title}>Create Account</Text>
