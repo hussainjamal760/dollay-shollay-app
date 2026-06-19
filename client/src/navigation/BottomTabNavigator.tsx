@@ -30,18 +30,28 @@ export default function BottomTabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#FF5252',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#8B5CF6',
+        tabBarInactiveTintColor: '#71717A',
         tabBarStyle: {
-          backgroundColor: '#1E1E1E',
-          borderTopWidth: 0,
+          backgroundColor: '#09090B',
+          borderTopWidth: 1,
+          borderTopColor: '#27272A',
+          height: 65,
+          paddingBottom: 10,
+          paddingTop: 8,
         },
         headerStyle: {
-          backgroundColor: '#121212',
-          borderBottomWidth: 0,
+          backgroundColor: '#09090B',
+          borderBottomWidth: 1,
+          borderBottomColor: '#27272A',
           elevation: 0,
+          shadowOpacity: 0,
         },
-        headerTintColor: '#ffffff',
+        headerTitleStyle: {
+          fontWeight: '800',
+          fontSize: 20,
+        },
+        headerTintColor: '#FAFAFA',
       })}
     >
       <Tab.Screen name="Today" component={TodayScreen} />
