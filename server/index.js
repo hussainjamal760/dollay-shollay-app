@@ -12,7 +12,16 @@ const dietRoutes = require('./routes/diet');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-connectDB();
+// Ensure DB is connected before handling any requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("Failed to connect to database in middleware");
+    res.status(500).json({ success: false, message: "Database connection failed" });
+  }
+});
 
 app.use(cors());
 app.use(express.json());
