@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { saveWorkoutLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MUSCLES = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Full Body'];
@@ -181,33 +184,40 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
   };
 
   const renderStep1 = () => (
-    <View style={styles.stepContainer}>
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContainer}>
       <Text style={styles.title}>Basic Details</Text>
       <TextInput
         style={styles.input}
         placeholder="Workout Plan Name (e.g. Push Pull Legs)"
-        placeholderTextColor="#999"
+        placeholderTextColor="#71717A"
         value={name}
         onChangeText={setName}
       />
       
       <Text style={styles.sectionTitle}>Select Days</Text>
       <View style={styles.daysContainer}>
-        {DAYS_OF_WEEK.map((day) => (
-          <TouchableOpacity
-            key={day}
-            style={[styles.dayButton, selectedDays.includes(day) && styles.dayButtonSelected]}
-            onPress={() => toggleDay(day)}
-          >
-            <Text style={[styles.dayText, selectedDays.includes(day) && styles.dayTextSelected]}>
-              {day.substring(0, 3)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {DAYS_OF_WEEK.map((day) => {
+          const isSelected = selectedDays.includes(day);
+          return (
+            <TouchableOpacity
+              key={day}
+              style={[styles.dayButton, isSelected && styles.dayButtonSelected]}
+              onPress={() => toggleDay(day)}
+            >
+              {isSelected ? (
+                <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.dayGradient}>
+                  <Text style={styles.dayTextSelected}>{day.substring(0, 3)}</Text>
+                </LinearGradient>
+              ) : (
+                <Text style={styles.dayText}>{day.substring(0, 3)}</Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
       
       <TouchableOpacity 
-        style={styles.button} 
+        style={styles.buttonWrapper} 
         onPress={() => {
           if (!name || selectedDays.length === 0) {
             Alert.alert('Error', 'Please enter name and select days');
@@ -216,19 +226,25 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
           setStep(2);
         }}
       >
-        <Text style={styles.buttonText}>Next: Select Muscles</Text>
+        <LinearGradient colors={['#6366F1', '#8B5CF6']} start={{x:0, y:0}} end={{x:1, y:1}} style={styles.button}>
+          <Text style={styles.buttonText}>Next: Select Muscles</Text>
+          <Ionicons name="arrow-forward" size={18} color="#FFF" style={{ marginLeft: 8 }} />
+        </LinearGradient>
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 
   const renderStep2 = () => (
-    <View style={styles.stepContainer}>
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContainer}>
       <Text style={styles.title}>Target Muscles</Text>
       {selectedDays.map(day => {
         const allMuscles = [...MUSCLES, ...customMuscles];
         return (
           <View key={day} style={styles.daySection}>
-            <Text style={styles.dayLabel}>{day}</Text>
+            <View style={styles.daySectionHeader}>
+              <Ionicons name="calendar-outline" size={18} color="#8B5CF6" />
+              <Text style={styles.dayLabel}>{day}</Text>
+            </View>
             <View style={styles.tagsContainer}>
               {allMuscles.map(muscle => {
                 const isSelected = (dayMuscles[day] || []).includes(muscle);
@@ -246,7 +262,7 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
               <TextInput
                 style={styles.customMuscleInput}
                 placeholder="+ Custom"
-                placeholderTextColor="#999"
+                placeholderTextColor="#71717A"
                 value={newMuscleText[day] || ''}
                 onChangeText={(val) => setNewMuscleText({...newMuscleText, [day]: val})}
                 onSubmitEditing={() => {
@@ -271,17 +287,21 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
       
       <View style={styles.rowButtons}>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep(1)}>
+          <Ionicons name="arrow-back" size={18} color="#A1A1AA" style={{ marginRight: 6 }} />
           <Text style={styles.secondaryButtonText}>Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => setStep(3)}>
-          <Text style={styles.primaryButtonText}>Next: Exercises</Text>
+        <TouchableOpacity style={styles.primaryButtonWrapper} onPress={() => setStep(3)}>
+          <LinearGradient colors={['#6366F1', '#8B5CF6']} start={{x:0, y:0}} end={{x:1, y:1}} style={styles.primaryButton}>
+            <Text style={styles.primaryButtonText}>Next: Exercises</Text>
+            <Ionicons name="arrow-forward" size={18} color="#FFF" style={{ marginLeft: 6 }} />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 
   const renderStep3 = () => (
-    <View style={styles.stepContainer}>
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.stepContainer}>
       <Text style={styles.title}>Exercises Detail</Text>
       
       {selectedDays.map(day => {
@@ -290,14 +310,18 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
         
         return (
           <View key={day} style={styles.exerciseDaySection}>
-            <Text style={styles.exerciseDayLabel}>{day}</Text>
+            <View style={styles.exerciseDayHeader}>
+              <Ionicons name="calendar" size={20} color="#8B5CF6" />
+              <Text style={styles.exerciseDayLabel}>{day}</Text>
+            </View>
             
             {muscles.map(muscle => (
               <View key={muscle} style={styles.muscleSection}>
                 <View style={styles.muscleHeader}>
                   <Text style={styles.muscleLabel}>{muscle}</Text>
                   <TouchableOpacity onPress={() => addExercise(day, muscle)} style={styles.addExerciseBtn}>
-                    <Text style={styles.addExerciseText}>+ Add Exercise</Text>
+                    <Ionicons name="add-circle" size={16} color="#06B6D4" style={{marginRight: 4}} />
+                    <Text style={styles.addExerciseText}>Add Exercise</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -306,13 +330,13 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
                     <View style={styles.exerciseHeader}>
                       <Text style={styles.exerciseIndex}>Exercise {index + 1}</Text>
                       <TouchableOpacity onPress={() => removeExercise(ex.id)}>
-                        <Text style={styles.removeText}>X</Text>
+                        <Ionicons name="trash" size={18} color="#EF4444" />
                       </TouchableOpacity>
                     </View>
                     <TextInput
                       style={styles.exInput}
                       placeholder="Exercise Name"
-                      placeholderTextColor="#999"
+                      placeholderTextColor="#71717A"
                       value={ex.name}
                       onChangeText={(val) => updateExercise(ex.id, 'name', val)}
                     />
@@ -330,14 +354,16 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
 
                     {ex.setsData.map((setObj: any, sIdx: number) => (
                       <View key={sIdx} style={styles.setRow}>
-                        <Text style={styles.setLabel}>Set {sIdx + 1}</Text>
+                        <View style={styles.setLabelContainer}>
+                          <Text style={styles.setLabel}>Set {sIdx + 1}</Text>
+                        </View>
                         <View style={styles.setInputGroup}>
                           <Text style={styles.setInputLabel}>kg</Text>
                           <TextInput
                             style={styles.setInput}
                             keyboardType="numeric"
                             placeholder="0"
-                            placeholderTextColor="#666"
+                            placeholderTextColor="#52525B"
                             value={setObj.weightLifted}
                             onChangeText={(val) => updateSetData(ex.id, sIdx, 'weightLifted', val)}
                           />
@@ -348,7 +374,7 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
                             style={styles.setInput}
                             keyboardType="numeric"
                             placeholder="0"
-                            placeholderTextColor="#666"
+                            placeholderTextColor="#52525B"
                             value={setObj.reps}
                             onChangeText={(val) => updateSetData(ex.id, sIdx, 'reps', val)}
                           />
@@ -366,90 +392,108 @@ export default function CreateWorkoutScreen({ route, navigation }: any) {
 
       <View style={styles.rowButtons}>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep(2)}>
+          <Ionicons name="arrow-back" size={18} color="#A1A1AA" style={{ marginRight: 6 }} />
           <Text style={styles.secondaryButtonText}>Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
-          {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.saveButtonText}>Save Workout</Text>}
+        <TouchableOpacity style={styles.primaryButtonWrapper} onPress={handleSave} disabled={loading}>
+          <LinearGradient colors={['#10B981', '#059669']} start={{x:0, y:0}} end={{x:1, y:1}} style={styles.primaryButton}>
+            {loading ? <ActivityIndicator color="#FFF" /> : (
+              <>
+                <Text style={styles.primaryButtonText}>Save Workout</Text>
+                <Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginLeft: 6 }} />
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressDot, step >= 1 && styles.progressDotActive]} />
-        <View style={[styles.progressLine, step >= 2 && styles.progressLineActive]} />
-        <View style={[styles.progressDot, step >= 2 && styles.progressDotActive]} />
-        <View style={[styles.progressLine, step >= 3 && styles.progressLineActive]} />
-        <View style={[styles.progressDot, step >= 3 && styles.progressDotActive]} />
-      </View>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressDot, step >= 1 && styles.progressDotActive]} />
+          <View style={[styles.progressLine, step >= 2 && styles.progressLineActive]} />
+          <View style={[styles.progressDot, step >= 2 && styles.progressDotActive]} />
+          <View style={[styles.progressLine, step >= 3 && styles.progressLineActive]} />
+          <View style={[styles.progressDot, step >= 3 && styles.progressDotActive]} />
+        </View>
 
-      {step === 1 && renderStep1()}
-      {step === 2 && renderStep2()}
-      {step === 3 && renderStep3()}
-    </ScrollView>
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
+        {step === 3 && renderStep3()}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#09090B',
   },
   content: {
-    padding: 20,
+    padding: 24,
     paddingBottom: 50,
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 30,
+    marginBottom: 32,
     marginTop: 20,
   },
   progressDot: {
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
-    backgroundColor: '#333',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#27272A',
   },
   progressDotActive: {
-    backgroundColor: '#bb86fc',
+    backgroundColor: '#8B5CF6',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
   },
   progressLine: {
     height: 3,
     width: 40,
-    backgroundColor: '#333',
+    backgroundColor: '#27272A',
   },
   progressLineActive: {
-    backgroundColor: '#bb86fc',
+    backgroundColor: '#8B5CF6',
   },
   stepContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 20,
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FAFAFA',
+    marginBottom: 24,
+    letterSpacing: -0.5,
   },
   sectionTitle: {
-    fontSize: 18,
-    color: '#bb86fc',
-    marginTop: 20,
-    marginBottom: 10,
-    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#A1A1AA',
+    marginTop: 24,
+    marginBottom: 16,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   input: {
-    backgroundColor: '#1e1e1e',
-    color: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    backgroundColor: '#18181B',
+    color: '#FAFAFA',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#27272A',
   },
   daysContainer: {
     flexDirection: 'row',
@@ -457,237 +501,297 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   dayButton: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#18181B',
     width: '23%',
-    paddingVertical: 15,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#27272A',
+    overflow: 'hidden',
   },
   dayButtonSelected: {
-    backgroundColor: '#bb86fc',
-    borderColor: '#bb86fc',
+    borderColor: 'transparent',
+  },
+  dayGradient: {
+    width: '100%',
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dayText: {
-    color: '#ccc',
-    fontWeight: 'bold',
+    color: '#A1A1AA',
+    fontWeight: '700',
+    paddingVertical: 14,
   },
   dayTextSelected: {
-    color: '#000',
+    color: '#FFF',
+    fontWeight: '800',
+  },
+  buttonWrapper: {
+    marginTop: 40,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   button: {
-    backgroundColor: '#bb86fc',
-    padding: 15,
-    borderRadius: 8,
+    padding: 16,
     alignItems: 'center',
-    marginTop: 30,
+    justifyContent: 'center',
+    flexDirection: 'row',
   },
   buttonText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
   },
   daySection: {
-    marginBottom: 20,
-    backgroundColor: '#1e1e1e',
-    padding: 15,
-    borderRadius: 8,
+    marginBottom: 24,
+    backgroundColor: '#18181B',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#27272A',
+  },
+  daySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   dayLabel: {
-    color: '#fff',
+    color: '#FAFAFA',
     fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontWeight: '800',
+    marginLeft: 8,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
   tag: {
-    backgroundColor: '#333',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#27272A',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
     marginRight: 10,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#3F3F46',
   },
   tagSelected: {
-    backgroundColor: '#bb86fc',
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    borderColor: '#8B5CF6',
   },
   tagText: {
-    color: '#ccc',
+    color: '#E4E4E7',
+    fontWeight: '600',
   },
   tagTextSelected: {
-    color: '#000',
-    fontWeight: 'bold',
+    color: '#8B5CF6',
+    fontWeight: '800',
   },
   customMuscleInput: {
-    backgroundColor: '#333',
-    color: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#09090B',
+    color: '#FAFAFA',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
     marginBottom: 10,
-    minWidth: 80,
+    minWidth: 100,
     textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
   },
   rowButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 30,
   },
   secondaryButton: {
-    backgroundColor: '#333',
-    padding: 15,
-    borderRadius: 8,
-    flex: 0.3,
+    backgroundColor: '#18181B',
+    padding: 16,
+    borderRadius: 12,
+    flex: 0.35,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#27272A',
+    flexDirection: 'row',
   },
   secondaryButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#E4E4E7',
+    fontWeight: '700',
+  },
+  primaryButtonWrapper: {
+    flex: 0.6,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   primaryButton: {
-    backgroundColor: '#bb86fc',
-    padding: 15,
-    borderRadius: 8,
-    flex: 0.65,
+    padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
   },
   primaryButtonText: {
-    color: '#000',
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    backgroundColor: '#03DAC6',
-    padding: 15,
-    borderRadius: 8,
-    flex: 0.65,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#000',
-    fontWeight: 'bold',
+    color: '#FFF',
+    fontWeight: '800',
+    fontSize: 16,
   },
   exerciseDaySection: {
-    marginBottom: 30,
+    marginBottom: 32,
+  },
+  exerciseDayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#27272A',
+    paddingBottom: 10,
   },
   exerciseDayLabel: {
-    color: '#bb86fc',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-    paddingBottom: 5,
+    color: '#8B5CF6',
+    fontSize: 22,
+    fontWeight: '900',
+    marginLeft: 8,
   },
   muscleSection: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   muscleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   muscleLabel: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#E4E4E7',
+    fontSize: 18,
+    fontWeight: '800',
   },
   addExerciseBtn: {
-    padding: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
   },
   addExerciseText: {
-    color: '#03DAC6',
-    fontWeight: 'bold',
+    color: '#06B6D4',
+    fontWeight: '700',
+    fontSize: 13,
   },
   exerciseCard: {
-    backgroundColor: '#1e1e1e',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: '#18181B',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#27272A',
   },
   exerciseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   exerciseIndex: {
-    color: '#999',
-    fontSize: 12,
-  },
-  removeText: {
-    color: '#CF6679',
-    fontWeight: 'bold',
+    color: '#A1A1AA',
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   exInput: {
-    backgroundColor: '#2c2c2c',
-    color: '#fff',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 10,
+    backgroundColor: '#09090B',
+    color: '#FAFAFA',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#3F3F46',
+    fontSize: 16,
   },
   numSetsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 5,
+    marginBottom: 16,
+    backgroundColor: '#09090B',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#27272A',
   },
   numSetsLabel: {
-    color: '#bbb',
+    color: '#E4E4E7',
     fontSize: 14,
-    marginRight: 10,
+    marginRight: 12,
+    fontWeight: '600',
   },
   numSetsInput: {
-    backgroundColor: '#111',
-    color: '#fff',
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 6,
+    backgroundColor: '#18181B',
+    color: '#FAFAFA',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     textAlign: 'center',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '800',
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: '#3F3F46',
   },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    backgroundColor: '#222',
-    padding: 8,
-    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: '#27272A',
+    padding: 10,
+    borderRadius: 10,
+  },
+  setLabelContainer: {
+    backgroundColor: '#3F3F46',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    width: 60,
+    alignItems: 'center',
   },
   setLabel: {
-    color: '#fff',
+    color: '#FAFAFA',
     fontSize: 12,
-    fontWeight: 'bold',
-    width: 45,
+    fontWeight: '800',
   },
   setInputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 10,
+    marginLeft: 16,
   },
   setInputLabel: {
-    color: '#999',
-    fontSize: 11,
-    marginRight: 5,
+    color: '#A1A1AA',
+    fontSize: 12,
+    marginRight: 8,
+    fontWeight: '600',
   },
   setInput: {
-    backgroundColor: '#111',
-    color: '#fff',
-    paddingVertical: 4,
+    backgroundColor: '#09090B',
+    color: '#FAFAFA',
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 8,
     textAlign: 'center',
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '800',
     borderWidth: 1,
-    borderColor: '#444',
-    minWidth: 55,
+    borderColor: '#3F3F46',
+    minWidth: 60,
   },
 });
