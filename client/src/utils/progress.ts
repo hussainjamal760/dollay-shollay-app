@@ -78,25 +78,47 @@ export const calculateProgressStats = async () => {
   const workedOutDatesMap: { [key: string]: boolean } = {};
   uniqueDates.forEach(k => workedOutDatesMap[k] = true);
 
-  for (let i = 0; i < 365; i++) {
-    const checkDate = new Date();
-    checkDate.setDate(d.getDate() - i);
-    const key = formatKey(checkDate);
-    const dayName = DAYS[checkDate.getDay()];
-    
-    if (workedOutDatesMap[key]) {
-      currentStreak++;
-    } else {
-      if (i === 0) {
-         if (!workoutDaysMap[dayName]) {
-           currentStreak++;
-         }
+  const hasActivePlan = Object.keys(workoutDaysMap).length > 0;
+
+  if (totalWorkouts === 0) {
+    currentStreak = 0;
+  } else {
+    const dates = Array.from(uniqueDates).map(d => new Date(d).setHours(0,0,0,0));
+    const firstWorkoutTime = Math.min(...dates);
+
+    for (let i = 0; i < 365; i++) {
+      const checkDate = new Date();
+      checkDate.setDate(d.getDate() - i);
+      checkDate.setHours(0,0,0,0);
+      
+      const key = formatKey(checkDate);
+      const dayName = DAYS[checkDate.getDay()];
+      
+      if (checkDate.getTime() < firstWorkoutTime) {
+        break; // Don't count days before the first ever workout
+      }
+      
+      if (workedOutDatesMap[key]) {
+        currentStreak++;
       } else {
-         if (!workoutDaysMap[dayName]) {
-            currentStreak++;
-         } else {
-            break;
-         }
+        if (hasActivePlan) {
+          if (!workoutDaysMap[dayName]) {
+            currentStreak++; // Keep streak alive on rest days
+          } else {
+            if (i === 0) {
+              // Missed today (workout day), but the day isn't over yet
+            } else {
+              break; // Missed a scheduled workout day in the past
+            }
+          }
+        } else {
+          // No active plan: every day counts
+          if (i === 0) {
+            // Missed today, day isn't over
+          } else {
+            break; // Missed yesterday, streak broken
+          }
+        }
       }
     }
   }
