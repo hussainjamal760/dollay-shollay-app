@@ -17,7 +17,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.client"
+      "package": "com.hussainjamal.dollayshollay"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -25,6 +25,11 @@
     "plugins": [
       "expo-secure-store",
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "30ec4354-c7a2-4564-9ce6-43c5dad1a64a"
+      }
+    }
   }
 }
