@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { getWorkoutLogsForPlan, saveWorkoutLogLocally } from '../database/db';
 import { syncDataWithServer } from '../utils/sync';
 import api from '../utils/api';
@@ -276,20 +278,28 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                   <View style={styles.dayAnalysisBox}>
                     {dayAnalysis[dayObj.dayOfWeek] ? (
                       <View style={styles.analysisResultBox}>
-                        <Text style={styles.analysisResultTitle}>🧠 AI Day Analysis</Text>
+                        <View style={styles.analysisHeader}>
+                          <Ionicons name="sparkles" size={16} color="#8B5CF6" />
+                          <Text style={styles.analysisResultTitle}>AI Day Analysis</Text>
+                        </View>
                         <Text style={styles.analysisResultText}>{dayAnalysis[dayObj.dayOfWeek]}</Text>
                       </View>
                     ) : (
                       <TouchableOpacity 
-                        style={styles.analyzeDayButton} 
+                        style={styles.analyzeDayButtonWrapper} 
                         onPress={() => analyzeDay(dayObj)}
                         disabled={loadingAnalysis[dayObj.dayOfWeek]}
                       >
-                        {loadingAnalysis[dayObj.dayOfWeek] ? (
-                          <ActivityIndicator color="#000" />
-                        ) : (
-                          <Text style={styles.analyzeDayButtonText}>🧠 Analyze Day with AI</Text>
-                        )}
+                        <LinearGradient colors={['#6366F1', '#8B5CF6']} start={{x:0, y:0}} end={{x:1, y:1}} style={styles.analyzeDayButton}>
+                          {loadingAnalysis[dayObj.dayOfWeek] ? (
+                            <ActivityIndicator color="#FFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="sparkles" size={18} color="#FFF" style={{marginRight: 8}} />
+                              <Text style={styles.analyzeDayButtonText}>Analyze Day with AI</Text>
+                            </>
+                          )}
+                        </LinearGradient>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -329,10 +339,18 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
 
                         <View style={styles.aiSuggestionBox}>
                           {aiSuggestions[key] ? (
-                            <Text style={styles.aiSuggestionText}>✨ AI: {aiSuggestions[key]}</Text>
+                            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                              <Ionicons name="flash" size={16} color="#8B5CF6" style={{marginRight: 6}} />
+                              <Text style={styles.aiSuggestionText}>{aiSuggestions[key]}</Text>
+                            </View>
                           ) : (
-                            <TouchableOpacity onPress={() => fetchSuggestion(key, ex.name, history)} disabled={loadingSuggestions[key]}>
-                              {loadingSuggestions[key] ? <ActivityIndicator size="small" color="#bb86fc" /> : <Text style={styles.aiButtonText}>✨ Get AI Overload Suggestion</Text>}
+                            <TouchableOpacity onPress={() => fetchSuggestion(key, ex.name, history)} disabled={loadingSuggestions[key]} style={{flexDirection: 'row', alignItems: 'center'}}>
+                              {loadingSuggestions[key] ? <ActivityIndicator size="small" color="#8B5CF6" /> : (
+                                <>
+                                  <Ionicons name="flash" size={16} color="#8B5CF6" style={{marginRight: 6}} />
+                                  <Text style={styles.aiButtonText}>Get AI Overload Suggestion</Text>
+                                </>
+                              )}
                             </TouchableOpacity>
                           )}
                         </View>
@@ -365,12 +383,12 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                                           datasets: [
                                             {
                                               data: weights,
-                                              color: (opacity = 1) => `rgba(255, 45, 85, ${opacity})`,
+                                              color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`, // #8B5CF6
                                               strokeWidth: 3
                                             },
                                             {
                                               data: repsData,
-                                              color: (opacity = 1) => `rgba(10, 132, 255, ${opacity})`,
+                                              color: (opacity = 1) => `rgba(6, 182, 212, ${opacity})`, // #06B6D4
                                               strokeWidth: 3
                                             }
                                           ],
@@ -379,14 +397,14 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                                         width={Dimensions.get('window').width - 70}
                                         height={180}
                                         chartConfig={{
-                                          backgroundColor: '#1C1C1E',
-                                          backgroundGradientFrom: '#1C1C1E',
-                                          backgroundGradientTo: '#1C1C1E',
+                                          backgroundColor: '#18181B',
+                                          backgroundGradientFrom: '#18181B',
+                                          backgroundGradientTo: '#18181B',
                                           decimalPlaces: 0,
                                           color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                                          labelColor: (opacity = 1) => `rgba(142, 142, 147, ${opacity})`,
+                                          labelColor: (opacity = 1) => `rgba(161, 161, 170, ${opacity})`,
                                           style: { borderRadius: 8 },
-                                          propsForDots: { r: '4', strokeWidth: '2', stroke: '#FF2D55' }
+                                          propsForDots: { r: '4', strokeWidth: '2', stroke: '#8B5CF6' }
                                         }}
                                         bezier
                                         style={{ marginVertical: 8, borderRadius: 8 }}
@@ -447,11 +465,13 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
                           ))}
 
                           <TouchableOpacity 
-                            style={styles.saveExButton} 
+                            style={styles.saveExButtonWrapper} 
                             onPress={() => handleSaveExercise(dayObj, ex)}
                             disabled={isSaving}
                           >
-                            {isSaving ? <ActivityIndicator color="#000" size="small" /> : <Text style={styles.saveExButtonText}>Save {ex.name}</Text>}
+                            <LinearGradient colors={['#6366F1', '#8B5CF6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.saveExButton}>
+                              {isSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveExButtonText}>Save {ex.name}</Text>}
+                            </LinearGradient>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -470,272 +490,300 @@ export default function WorkoutSessionScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#09090B',
   },
   content: {
-    padding: 20,
+    padding: 24,
     paddingBottom: 50,
   },
   planName: {
     fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: '700',
-    marginBottom: 5,
+    color: '#FAFAFA',
+    fontWeight: '800',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   instructions: {
-    color: '#8E8E93',
+    color: '#A1A1AA',
     fontSize: 15,
-    marginBottom: 20,
+    marginBottom: 24,
+    lineHeight: 22,
   },
   dayCard: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 16,
-    marginBottom: 15,
+    backgroundColor: '#18181B',
+    borderRadius: 20,
+    marginBottom: 20,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#27272A',
   },
   dayHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 18,
-    backgroundColor: '#1C1C1E',
+    padding: 20,
+    backgroundColor: '#18181B',
   },
   dayTitle: {
     fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: '#FAFAFA',
+    fontWeight: '700',
   },
   highlightedDay: {
     borderWidth: 1,
-    borderColor: '#FF2D55',
+    borderColor: '#8B5CF6',
   },
   highlightedText: {
-    color: '#FF2D55',
+    color: '#8B5CF6',
   },
   muscleSummary: {
-    color: '#8E8E93',
+    color: '#A1A1AA',
     fontSize: 14,
-    marginTop: 4,
+    marginTop: 6,
   },
   expandIcon: {
-    color: '#8E8E93',
+    color: '#A1A1AA',
     fontSize: 18,
   },
   exercisesContainer: {
-    padding: 15,
-    backgroundColor: '#1C1C1E',
+    padding: 20,
+    backgroundColor: '#18181B',
     borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
+    borderTopColor: '#27272A',
   },
   restDayText: {
-    color: '#8E8E93',
+    color: '#A1A1AA',
     fontStyle: 'italic',
     textAlign: 'center',
   },
   exerciseCard: {
-    backgroundColor: '#2C2C2E',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
+    backgroundColor: '#27272A',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
   },
   exerciseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 8,
+    marginBottom: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#3A3A3C',
+    borderBottomColor: '#3F3F46',
   },
   exerciseName: {
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   muscleLabel: {
-    color: '#0A84FF',
+    color: '#06B6D4',
     fontSize: 12,
-    fontWeight: '600',
-    backgroundColor: 'rgba(10, 132, 255, 0.1)',
-    paddingHorizontal: 8,
+    fontWeight: '700',
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 100,
   },
   lastLoadContainer: {
-    backgroundColor: '#1C1C1E',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: '#18181B',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   lastLoadTitle: {
-    color: '#8E8E93',
+    color: '#A1A1AA',
     fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   lastLoadText: {
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     fontSize: 14,
     marginBottom: 2,
   },
   historySection: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   historyToggleText: {
-    color: '#0A84FF',
+    color: '#06B6D4',
     fontSize: 14,
     textAlign: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
+    fontWeight: '600',
   },
   historyList: {
-    marginTop: 5,
-    padding: 10,
-    backgroundColor: '#1C1C1E',
-    borderRadius: 8,
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#18181B',
+    borderRadius: 12,
   },
   historyItemBox: {
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
-    paddingBottom: 8,
-    marginBottom: 8,
+    borderBottomColor: '#27272A',
+    paddingBottom: 10,
+    marginBottom: 10,
   },
   historyItemDate: {
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   historyItemText: {
-    color: '#8E8E93',
+    color: '#A1A1AA',
     fontSize: 14,
     marginBottom: 2,
   },
   newLoadSection: {
-    marginTop: 5,
-    paddingTop: 12,
+    marginTop: 8,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#3A3A3C',
+    borderTopColor: '#3F3F46',
   },
   newLoadTitle: {
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 15,
+    fontWeight: '700',
+    marginBottom: 16,
   },
   numSetsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   numSetsLabel: {
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     fontSize: 15,
-    marginRight: 10,
+    marginRight: 12,
+    fontWeight: '500',
   },
   numSetsInput: {
-    backgroundColor: '#1C1C1E',
-    color: '#FFFFFF',
-    paddingVertical: 6,
-    paddingHorizontal: 15,
+    backgroundColor: '#18181B',
+    color: '#FAFAFA',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 8,
     textAlign: 'center',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
   },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    backgroundColor: '#1C1C1E',
-    padding: 10,
-    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#18181B',
+    padding: 12,
+    borderRadius: 12,
   },
   setLabel: {
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     width: 50,
   },
   setInputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 15,
+    marginLeft: 16,
   },
   setInputLabel: {
-    color: '#8E8E93',
+    color: '#A1A1AA',
     fontSize: 12,
-    marginRight: 5,
+    marginRight: 6,
   },
   setInput: {
-    backgroundColor: '#2C2C2E',
-    color: '#FFFFFF',
-    paddingVertical: 6,
-    paddingHorizontal: 15,
+    backgroundColor: '#27272A',
+    color: '#FAFAFA',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 8,
     textAlign: 'center',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     minWidth: 60,
   },
-  saveExButton: {
-    backgroundColor: '#FF2D55',
-    padding: 14,
+  saveExButtonWrapper: {
     borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 20,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  saveExButton: {
+    padding: 16,
     alignItems: 'center',
-    marginTop: 15,
   },
   saveExButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   aiSuggestionBox: {
-    backgroundColor: 'rgba(255, 45, 85, 0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    alignItems: 'center',
-  },
-  aiSuggestionText: {
-    color: '#FF2D55',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  aiButtonText: {
-    color: '#FF2D55',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  dayAnalysisBox: {
-    marginBottom: 20,
-  },
-  analyzeDayButton: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     padding: 14,
     borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.2)',
+  },
+  aiSuggestionText: {
+    color: '#8B5CF6',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 20,
+  },
+  aiButtonText: {
+    color: '#8B5CF6',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dayAnalysisBox: {
+    marginBottom: 24,
+  },
+  analyzeDayButtonWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  analyzeDayButton: {
+    padding: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   analyzeDayButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   analysisResultBox: {
-    backgroundColor: '#1C1C1E',
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: '#18181B',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#27272A',
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   analysisResultTitle: {
-    color: '#FF2D55',
+    color: '#8B5CF6',
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: '700',
+    marginLeft: 6,
   },
   analysisResultText: {
-    color: '#E5E5EA',
+    color: '#E4E4E7',
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 24,
   },
 });
 
