@@ -27,10 +27,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Dollay Shollay server is running!' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-hjamal9865_db_user
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Dollay Shollay server is running locally on port ${PORT}`);
+  });
+}
 
-Password
-Lh85Uga3eABvk1uK
+// Required for Vercel Serverless Deployment
+module.exports = app;
